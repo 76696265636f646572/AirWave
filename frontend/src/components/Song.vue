@@ -86,7 +86,8 @@ const { notifySuccess, notifyError } = useNotifications();
 const thumbnailSrc = computed(() => {
   const item = props.item;
   if (item?.thumbnail_url) return item.thumbnail_url;
-  if (item?.id) return `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`;
+  const videoId = item?.video_id ?? item?.id;
+  if (videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
   return "";
 });
 

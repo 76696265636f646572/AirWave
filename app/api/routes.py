@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, HttpUrl
 
 from app.services.stream_engine import StreamEngine
+from app.services.yt_dlp_service import youtube_video_id_from_url
 
 root_router = APIRouter()
 api_router = APIRouter()
@@ -99,6 +100,7 @@ def _serialize_queue_items(items: list[Any]) -> list[dict[str, Any]]:
     return [
         {
             "id": item.id,
+            "video_id": youtube_video_id_from_url(item.source_url),
             "title": item.title,
             "source_url": item.source_url,
             "status": item.status.value,

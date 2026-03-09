@@ -34,7 +34,7 @@
       />
       <div class="flex w-full gap-2 sm:w-auto">
       <UButton type="submit" color="primary" variant="solid" size="md" class="flex-1 sm:flex-none">
-        {{ isPlaylistUrl ? "Queue Playlist" : "Add URL" }}
+        {{ isPlaylistUrl ? "Add to Playlists" : "Add URL" }}
       </UButton>
       <UButton type="button" color="neutral" variant="outline" size="md" class="flex-1 sm:flex-none" @click="emitPlayUrl">
         {{ isPlaylistUrl ? "Play Playlist" : "Play URL" }}

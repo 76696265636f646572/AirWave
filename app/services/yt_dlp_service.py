@@ -7,6 +7,19 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 
+def youtube_video_id_from_url(url: str) -> str | None:
+    """Extract YouTube video id from a watch URL or youtu.be URL. Returns None if not a video URL."""
+    if not url:
+        return None
+    parsed = urlparse(url)
+    if parsed.netloc.endswith("youtu.be"):
+        return (parsed.path or "").strip("/") or None
+    if "youtube.com" in parsed.netloc and "watch" in parsed.path:
+        query = parse_qs(parsed.query)
+        return (query.get("v") or [None])[0]
+    return None
+
+
 class YtDlpError(RuntimeError):
     pass
 

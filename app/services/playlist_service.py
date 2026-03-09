@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 from app.db.repository import NewPlaylistEntry, NewQueueItem, Repository
-from app.services.yt_dlp_service import PlaylistPreview, YtDlpService
+from app.services.yt_dlp_service import PlaylistPreview, YtDlpService, youtube_video_id_from_url
 
 
 class PlaylistService:
@@ -116,6 +116,7 @@ class PlaylistService:
         return [
             {
                 "id": entry.id,
+                "video_id": youtube_video_id_from_url(entry.source_url),
                 "playlist_id": entry.playlist_id,
                 "source_url": entry.source_url,
                 "normalized_url": entry.normalized_url,
