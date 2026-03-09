@@ -72,7 +72,8 @@ async function onYoutubeSearch(router, route, query) {
 async function selectPlaylist(router, playlistId) {
   activePlaylistId.value = playlistId;
   try {
-    await router.push({ path: `/playlist/${playlistId}` });
+    const path = playlistId ? `/playlist/${playlistId}` : "/";
+    await router.push({ path });
   } catch {
     // Ignore navigation errors for repeated clicks on the same route.
   }

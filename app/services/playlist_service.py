@@ -107,6 +107,10 @@ class PlaylistService:
             raise ValueError("Playlist not found")
         return self._serialize_playlist(playlist)
 
+    def delete_playlist(self, playlist_id: uuid.UUID) -> None:
+        if not self.repository.delete_playlist(playlist_id):
+            raise ValueError("Playlist not found")
+
     def list_playlist_entries(self, playlist_id: uuid.UUID) -> list[dict]:
         entries = self.repository.list_playlist_entries(playlist_id)
         return [

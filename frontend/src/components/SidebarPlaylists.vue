@@ -71,6 +71,31 @@
         </form>
       </template>
     </UModal>
+
+    <UModal v-model:open="deleteModalOpen" :ui="{ width: 'max-w-sm' }">
+      <template #content>
+        <div class="p-4">
+          <h3 class="text-lg font-semibold">Delete playlist</h3>
+          <p class="mt-2 text-sm text-neutral-400">
+            Delete "{{ playlistToDelete ? (playlistToDelete.title || 'Untitled playlist') : '' }}"?
+            This cannot be undone.
+          </p>
+          <div class="mt-4 flex justify-end gap-2">
+            <UButton type="button" color="neutral" variant="ghost" @click="deleteModalOpen = false">
+              Cancel
+            </UButton>
+            <UButton
+              type="button"
+              color="error"
+              variant="solid"
+              @click="submitDelete"
+            >
+              Delete
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </aside>
 </template>
 
@@ -85,6 +110,8 @@ const newTitle = ref("");
 const renameModalOpen = ref(false);
 const renameTitle = ref("");
 const playlistToRename = ref(null);
+const deleteModalOpen = ref(false);
+const playlistToDelete = ref(null);
 const router = useRouter();
 const {
   playlists,
@@ -93,6 +120,7 @@ const {
   playPlaylistNow,
   renamePlaylist,
   setPlaylistPinned,
+  deletePlaylist,
 } = useLibraryState();
 const { activePlaylistId, selectPlaylist } = useUiState();
 
@@ -122,7 +150,32 @@ function dropdownItemsFor(playlist) {
       onSelect: () => setPlaylistPinned(playlist.id, !pinned),
     },
   ]);
+  items.push([
+    {
+      label: "Delete",
+      icon: "i-lucide-trash-2",
+      onSelect: () => openDeleteModal(playlist),
+      color: "error",
+    },
+  ]);
   return items;
+}
+
+function openDeleteModal(playlist) {
+  playlistToDelete.value = playlist;
+  deleteModalOpen.value = true;
+}
+
+async function submitDelete() {
+  const playlist = playlistToDelete.value;
+  if (!playlist) return;
+  const wasSelected = activePlaylistId.value === playlist.id;
+  deleteModalOpen.value = false;
+  playlistToDelete.value = null;
+  await deletePlaylist(playlist.id);
+  if (wasSelected) {
+    selectPlaylist(router, null);
+  }
 }
 
 function openRenameModal(playlist) {
