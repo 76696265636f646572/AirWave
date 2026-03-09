@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -15,6 +16,9 @@ from app.services.playlist_service import PlaylistService
 from app.services.sonos_service import SonosService
 from app.services.stream_engine import StreamEngine
 from app.services.yt_dlp_service import YtDlpService
+
+APP_DIR = Path(__file__).resolve().parent
+STATIC_DIR = APP_DIR / "static"
 
 
 def create_app(settings: Settings | None = None, start_engine: bool = True) -> FastAPI:
@@ -60,5 +64,5 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
 
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
     app.include_router(router)
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     return app
