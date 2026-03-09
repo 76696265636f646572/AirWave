@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ app_name }}</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>{{ app_name }}</h1>
+      <p class="muted">Shared stream: <a href="{{ stream_url }}" target="_blank" rel="noreferrer">{{ stream_url }}</a></p>
+
+      <section class="panel">
+        <h2>Add URL</h2>
+        <form id="add-url-form">
+          <input id="url-input" type="url" placeholder="https://www.youtube.com/watch?v=..." required />
+          <button type="submit">Add to Queue</button>
+        </form>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>Now Playing</h2>
+          <div id="state-text" class="mono">loading...</div>
+          <button id="skip-btn" type="button">Skip Current</button>
+        </div>
+        <div class="panel">
+          <h2>Sonos</h2>
+          <button id="refresh-sonos-btn" type="button">Refresh Speakers</button>
+          <ul id="sonos-list"></ul>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Queue</h2>
+        <ul id="queue-list"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Play History</h2>
+        <ul id="history-list"></ul>
+      </section>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

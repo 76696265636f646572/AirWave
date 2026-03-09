@@ -1,0 +1,17 @@
+.venv/
+.venv-test310/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+*.egg-info/
+
+.env
+mytube.db
+
+bin/ffmpeg
+bin/yt-dlp

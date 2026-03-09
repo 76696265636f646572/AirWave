@@ -1,0 +1,197 @@
+from __future__ import annotations
+
+from contextlib import contextmanager
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from threading import Lock
+from typing import Iterator, Optional
+
+from sqlalchemy import Engine, Select, create_engine, func, select
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.db.models import Base, PlayHistory, Playlist, QueueItem, QueueStatus, Setting
+
+
+@dataclass
+class NewQueueItem:
+    source_url: str
+    normalized_url: str
+    source_type: str
+    title: str | None = None
+    channel: str | None = None
+    duration_seconds: int | None = None
+    thumbnail_url: str | None = None
+    playlist_id: int | None = None
+
+
+class Repository:
+    def __init__(self, db_url: str) -> None:
+        self.engine: Engine = create_engine(db_url, future=True)
+        self._session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
+        self._queue_lock = Lock()
+
+    def init_db(self) -> None:
+        Base.metadata.create_all(self.engine)
+
+    @contextmanager
+    def session(self) -> Iterator[Session]:
+        session = self._session_factory()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def _next_position(self, session: Session) -> int:
+        current_max = session.scalar(select(func.max(QueueItem.queue_position)).where(QueueItem.status == QueueStatus.queued))
+        return int(current_max or 0) + 1
+
+    def enqueue_items(self, items: list[NewQueueItem]) -> list[QueueItem]:
+        if not items:
+            return []
+        with self._queue_lock, self.session() as session:
+            position = self._next_position(session)
+            created: list[QueueItem] = []
+            for item in items:
+                queue_item = QueueItem(
+                    source_url=item.source_url,
+                    normalized_url=item.normalized_url,
+                    source_type=item.source_type,
+                    title=item.title,
+                    channel=item.channel,
+                    duration_seconds=item.duration_seconds,
+                    thumbnail_url=item.thumbnail_url,
+                    playlist_id=item.playlist_id,
+                    status=QueueStatus.queued,
+                    queue_position=position,
+                )
+                session.add(queue_item)
+                created.append(queue_item)
+                position += 1
+            session.flush()
+            return created
+
+    def list_queue(self) -> list[QueueItem]:
+        with self.session() as session:
+            stmt: Select[tuple[QueueItem]] = select(QueueItem).where(
+                QueueItem.status.in_([QueueStatus.queued, QueueStatus.playing])
+            ).order_by(QueueItem.status.asc(), QueueItem.queue_position.asc())
+            return list(session.scalars(stmt).all())
+
+    def list_history(self, limit: int = 50) -> list[PlayHistory]:
+        with self.session() as session:
+            stmt = select(PlayHistory).order_by(PlayHistory.started_at.desc()).limit(limit)
+            return list(session.scalars(stmt).all())
+
+    def create_or_update_playlist(self, source_url: str, title: str | None, channel: str | None, entry_count: int) -> Playlist:
+        with self.session() as session:
+            playlist = session.scalar(select(Playlist).where(Playlist.source_url == source_url))
+            if playlist is None:
+                playlist = Playlist(
+                    source_url=source_url,
+                    title=title,
+                    channel=channel,
+                    entry_count=entry_count,
+                )
+                session.add(playlist)
+            else:
+                playlist.title = title
+                playlist.channel = channel
+                playlist.entry_count = entry_count
+            session.flush()
+            return playlist
+
+    def has_queued_items(self) -> bool:
+        with self.session() as session:
+            count = session.scalar(select(func.count(QueueItem.id)).where(QueueItem.status == QueueStatus.queued))
+            return bool(count and count > 0)
+
+    def dequeue_next(self) -> QueueItem | None:
+        with self._queue_lock, self.session() as session:
+            next_item = session.scalar(
+                select(QueueItem)
+                .where(QueueItem.status == QueueStatus.queued)
+                .order_by(QueueItem.queue_position.asc())
+                .limit(1)
+            )
+            if next_item is None:
+                return None
+            next_item.status = QueueStatus.playing
+            return next_item
+
+    def mark_item_resolved(self, item_id: int, stream_url: str) -> None:
+        with self.session() as session:
+            item = session.get(QueueItem, item_id)
+            if item is None:
+                return
+            item.resolved_stream_url = stream_url
+            item.resolved_at = datetime.now(timezone.utc)
+
+    def mark_playback_finished(self, item_id: int, status: QueueStatus, error_message: str | None = None) -> None:
+        with self._queue_lock, self.session() as session:
+            item = session.get(QueueItem, item_id)
+            if item is None:
+                return
+            item.status = status
+            session.add(
+                PlayHistory(
+                    queue_item_id=item.id,
+                    title=item.title,
+                    source_url=item.source_url,
+                    status=status.value,
+                    error_message=error_message,
+                    finished_at=datetime.now(timezone.utc),
+                )
+            )
+
+    def remove_item(self, item_id: int) -> bool:
+        with self._queue_lock, self.session() as session:
+            item = session.get(QueueItem, item_id)
+            if item is None:
+                return False
+            if item.status == QueueStatus.playing:
+                item.status = QueueStatus.skipped
+            else:
+                item.status = QueueStatus.removed
+            return True
+
+    def reorder_item(self, item_id: int, new_position: int) -> bool:
+        with self._queue_lock, self.session() as session:
+            queue_items = list(
+                session.scalars(
+                    select(QueueItem)
+                    .where(QueueItem.status == QueueStatus.queued)
+                    .order_by(QueueItem.queue_position.asc())
+                ).all()
+            )
+            if not queue_items:
+                return False
+            idx = next((i for i, item in enumerate(queue_items) if item.id == item_id), None)
+            if idx is None:
+                return False
+            item = queue_items.pop(idx)
+            bounded_target = max(0, min(new_position, len(queue_items)))
+            queue_items.insert(bounded_target, item)
+            for pos, queue_item in enumerate(queue_items, start=1):
+                queue_item.queue_position = pos
+            return True
+
+    def get_item(self, item_id: int) -> Optional[QueueItem]:
+        with self.session() as session:
+            return session.get(QueueItem, item_id)
+
+    def get_setting(self, key: str) -> str | None:
+        with self.session() as session:
+            setting = session.get(Setting, key)
+            return None if setting is None else setting.value
+
+    def set_setting(self, key: str, value: str) -> None:
+        with self.session() as session:
+            setting = session.get(Setting, key)
+            if setting is None:
+                session.add(Setting(key=key, value=value))
+            else:
+                setting.value = value

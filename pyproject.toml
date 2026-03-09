@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mytube-radio"
+version = "0.1.0"
+description = "Shared YouTube-backed radio stream using FastAPI."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "sqlalchemy>=2.0.32",
+  "pydantic-settings>=2.4.0",
+  "jinja2>=3.1.4",
+  "python-multipart>=0.0.9",
+  "httpx>=0.27.0",
+  "soco>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+import json
+import subprocess
+from dataclasses import dataclass
+from typing import Any
+from urllib.parse import parse_qs, urlparse
+
+
+class YtDlpError(RuntimeError):
+    pass
+
+
+@dataclass
+class ResolvedTrack:
+    source_url: str
+    normalized_url: str
+    title: str | None
+    channel: str | None
+    duration_seconds: int | None
+    thumbnail_url: str | None
+    stream_url: str
+
+
+@dataclass
+class PlaylistPreview:
+    source_url: str
+    title: str | None
+    channel: str | None
+    entries: list[dict[str, Any]]
+
+
+class YtDlpService:
+    def __init__(self, binary_path: str) -> None:
+        self.binary_path = binary_path
+
+    def normalize_url(self, url: str) -> str:
+        parsed = urlparse(url)
+        if parsed.netloc.endswith("youtu.be"):
+            video_id = parsed.path.lstrip("/")
+            return f"https://www.youtube.com/watch?v={video_id}"
+        if "youtube.com" in parsed.netloc:
+            query = parse_qs(parsed.query)
+            video_id = query.get("v", [None])[0]
+            if video_id:
+                return f"https://www.youtube.com/watch?v={video_id}"
+            playlist_id = query.get("list", [None])[0]
+            if playlist_id:
+                return f"https://www.youtube.com/playlist?list={playlist_id}"
+        return url
+
+    def is_playlist_url(self, url: str) -> bool:
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        return "list" in query and ("/playlist" in parsed.path or "/watch" in parsed.path)
+
+    def _run_json(self, *args: str) -> dict[str, Any]:
+        cmd = [self.binary_path, *args]
+        completed = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if completed.returncode != 0:
+            raise YtDlpError(completed.stderr.strip() or "yt-dlp failed")
+        try:
+            return json.loads(completed.stdout)
+        except json.JSONDecodeError as exc:
+            raise YtDlpError("Invalid JSON from yt-dlp") from exc
+
+    def resolve_video(self, url: str) -> ResolvedTrack:
+        normalized = self.normalize_url(url)
+        data = self._run_json(
+            "--no-playlist",
+            "-f",
+            "bestaudio/best",
+            "--skip-download",
+            "-J",
+            normalized,
+        )
+        direct_url = data.get("url")
+        if not direct_url:
+            raise YtDlpError("Could not resolve direct stream URL")
+        return ResolvedTrack(
+            source_url=url,
+            normalized_url=normalized,
+            title=data.get("title"),
+            channel=data.get("uploader") or data.get("channel"),
+            duration_seconds=data.get("duration"),
+            thumbnail_url=data.get("thumbnail"),
+            stream_url=direct_url,
+        )
+
+    def preview_playlist(self, url: str) -> PlaylistPreview:
+        normalized = self.normalize_url(url)
+        data = self._run_json(
+            "--flat-playlist",
+            "--skip-download",
+            "-J",
+            normalized,
+        )
+        entries: list[dict[str, Any]] = []
+        for entry in data.get("entries", []):
+            if not isinstance(entry, dict):
+                continue
+            video_id = entry.get("id")
+            if not video_id:
+                continue
+            entries.append(
+                {
+                    "source_url": f"https://www.youtube.com/watch?v={video_id}",
+                    "normalized_url": f"https://www.youtube.com/watch?v={video_id}",
+                    "title": entry.get("title"),
+                    "channel": entry.get("uploader") or entry.get("channel"),
+                    "duration_seconds": entry.get("duration"),
+                    "thumbnail_url": None,
+                }
+            )
+        return PlaylistPreview(
+            source_url=normalized,
+            title=data.get("title"),
+            channel=data.get("uploader") or data.get("channel"),
+            entries=entries,
+        )
