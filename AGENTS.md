@@ -100,6 +100,7 @@ If you change Vue files, composables, or router behavior, run `npm run build` so
 - `frontend/src/App.vue` is the main coordinator for queue, history, playlists, playback state, and Sonos state. Avoid duplicating global state in multiple components.
 - Use `fetchJson` from `frontend/src/composables/useApi.js` for API requests unless there is a strong reason not to.
 - Keep presentational logic inside components and shared request/state utilities inside composables.
+- Prefer keeping UI action logic in the component that renders the control when behavior is local to that component; emit events when parent coordination is required for shared state, navigation, or cross-component side effects.
 - Match the existing Vue style in touched files. Current code uses `<script setup>`, double quotes, and composition API primitives.
 - When adding UI that depends on backend payloads, verify the shape against the API response instead of assuming fields.
 
