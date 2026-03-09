@@ -1,5 +1,5 @@
 <template>
-  <aside class="min-h-0 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+  <aside class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3 flex flex-col">
     <div class="mb-3 flex items-center justify-between gap-2">
       <h2 class="text-2xl font-bold">Sonos</h2>
       <UButton type="button" color="primary" variant="soft" size="sm" @click="$emit('refresh')">
@@ -7,7 +7,7 @@
       </UButton>
     </div>
 
-    <ul class="max-h-[66vh] space-y-2 overflow-auto pr-1">
+    <ul class="min-h-0 flex-1 space-y-2 overflow-auto pr-1">
       <li v-for="speaker in speakers" :key="speaker.uid" class="rounded-md border border-neutral-700 p-2">
         <div class="flex items-center justify-between gap-2">
           <div>

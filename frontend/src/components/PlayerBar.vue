@@ -1,5 +1,5 @@
 <template>
-  <footer class="sticky bottom-0 z-10 rounded-xl border border-neutral-700 bg-neutral-900 px-2 py-2 sm:px-3">
+  <footer class="sticky bottom-0 z-10 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 px-2 py-2 sm:px-3 md:static">
     <div class="grid items-center gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]">
       <div class="flex min-w-0 items-center gap-3">
         <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-700 bg-neutral-800">
@@ -36,6 +36,24 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2 md:justify-end">
+          <div class="flex items-center gap-2">
+            <UButton
+              type="button"
+              :color="sidebarView === sidebarQueueView ? 'primary' : 'neutral'"
+              :variant="sidebarView === sidebarQueueView ? 'soft' : 'ghost'"
+              icon="i-lucide-list-music"
+              aria-label="Show queue and history"
+              @click="emit('set-sidebar-view', sidebarQueueView)"
+            />
+            <UButton
+              type="button"
+              :color="sidebarView === sidebarSonosView ? 'primary' : 'neutral'"
+              :variant="sidebarView === sidebarSonosView ? 'soft' : 'ghost'"
+              icon="i-lucide-speaker"
+              aria-label="Show Sonos speakers"
+              @click="emit('set-sidebar-view', sidebarSonosView)"
+            />
+          </div>
         <a
           class="mr-1 text-xs font-medium text-emerald-400 hover:text-emerald-300"
           :href="state.stream_url"
@@ -64,7 +82,7 @@
         >
           Stop Local
         </UButton>
-        <UButton type="button" color="neutral" variant="outline" size="xs" @click="$emit('skip')">
+        <UButton type="button" color="neutral" variant="outline" size="xs" @click="emit('skip')">
           Skip
         </UButton>
       </div>
@@ -82,9 +100,21 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  sidebarView: {
+    type: String,
+    required: true,
+  },
+  sidebarQueueView: {
+    type: String,
+    required: true,
+  },
+  sidebarSonosView: {
+    type: String,
+    required: true,
+  },
 });
 
-defineEmits(["skip"]);
+const emit = defineEmits(["skip", "set-sidebar-view"]);
 
 const audioEl = ref(null);
 const wantsLocalPlayback = ref(false);

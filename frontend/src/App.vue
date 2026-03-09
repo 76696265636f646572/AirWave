@@ -1,6 +1,6 @@
 <template>
   <UApp :toaster="{ position: 'bottom-right' }">
-    <div class="min-h-screen bg-neutral-950 pb-24 text-neutral-100 p-3 flex flex-col gap-3 sm:pb-20">
+    <div class="h-dvh overflow-hidden bg-neutral-950 p-3 text-neutral-100 flex flex-col gap-3">
       <TopBar
         :search-text="searchText"
         :search-results="searchResults"
@@ -10,8 +10,9 @@
         @search-text-change="onSearchTextChange"
       />
 
-      <div class="grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)_320px]">
+      <div class="min-h-0 flex-1 grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
         <SidebarPlaylists
+          class="h-full"
           :playlists="filteredPlaylists"
           :active-playlist-id="activePlaylistId"
           @create-playlist="onCreatePlaylist"
@@ -19,34 +20,63 @@
           @queue-playlist="onQueuePlaylist"
         />
 
-        <main class="grid gap-3 min-h-0 xl:grid-rows-[minmax(280px,1fr)_minmax(220px,1fr)]">
-          <QueuePanel
-            :queue="filteredQueue"
-            :active-playlist-id="activePlaylistId"
-            @remove="onRemoveQueueItem"
-            @reorder="onReorderQueueItem"
-            @save-to-playlist="onSaveQueueToPlaylist"
-          />
-          <HistoryPanel :history="filteredHistory" @clear="onClearHistory" />
+        <main class="min-h-0 h-full">
+          <RouterView />
         </main>
 
-        <SonosPanel
-          :speakers="speakers"
-          @refresh="onRefreshSonosManual"
-          @play="playOnSpeaker"
-          @group="groupSpeaker"
-          @ungroup="ungroupSpeaker"
-          @set-volume="setSpeakerVolume"
-        />
+        <aside class="min-h-0 h-full flex flex-col gap-3">
+          <template v-if="sidebarView === SIDEBAR_QUEUE_VIEW">
+            <UTabs
+              v-model="activeQueueTab"
+              :items="queueSidebarTabs"
+              class="w-full min-h-0 h-full"
+              :ui="{ content: 'h-full min-h-0' }"
+              :unmount-on-hide="false"
+            >
+              <template #queue>
+                <QueuePanel
+                  class="h-full"
+                  :queue="filteredQueue"
+                  :active-playlist-id="activePlaylistId"
+                  @remove="onRemoveQueueItem"
+                  @reorder="onReorderQueueItem"
+                  @save-to-playlist="onSaveQueueToPlaylist"
+                />
+              </template>
+
+              <template #history>
+                <HistoryPanel class="h-full" :history="filteredHistory" @clear="onClearHistory" />
+              </template>
+            </UTabs>
+          </template>
+
+          <SonosPanel
+            v-else
+            class="h-full"
+            :speakers="speakers"
+            @refresh="onRefreshSonosManual"
+            @play="playOnSpeaker"
+            @group="groupSpeaker"
+            @ungroup="ungroupSpeaker"
+            @set-volume="setSpeakerVolume"
+          />
+        </aside>
       </div>
 
-      <PlayerBar :state="playbackState" @skip="skipCurrent" />
+      <PlayerBar
+        :state="playbackState"
+        :sidebar-view="sidebarView"
+        :sidebar-queue-view="SIDEBAR_QUEUE_VIEW"
+        :sidebar-sonos-view="SIDEBAR_SONOS_VIEW"
+        @set-sidebar-view="sidebarView = $event"
+        @skip="skipCurrent"
+      />
     </div>
   </UApp>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import HistoryPanel from "./components/HistoryPanel.vue";
 import PlayerBar from "./components/PlayerBar.vue";
@@ -74,10 +104,51 @@ const playbackState = ref({
 const searchText = ref("");
 const searchResults = ref([]);
 const activePlaylistId = ref(null);
+const SIDEBAR_VIEW_STORAGE_KEY = "mytube:settings:sidebar-view";
+const SIDEBAR_TAB_STORAGE_KEY = "mytube:settings:sidebar-tab";
+const SIDEBAR_QUEUE_VIEW = "queue";
+const SIDEBAR_SONOS_VIEW = "sonos";
+const QUEUE_TAB = "queue";
+const HISTORY_TAB = "history";
+const sidebarView = ref(SIDEBAR_QUEUE_VIEW);
+const activeQueueTab = ref(QUEUE_TAB);
+const queueSidebarTabs = [
+  { label: "Queue", icon: "i-lucide-list-music", slot: "queue", value: QUEUE_TAB },
+  { label: "History", icon: "i-lucide-history", slot: "history", value: HISTORY_TAB },
+];
 const toast = useToast();
 
 let playbackTickTimer = null;
 let unsubscribeWsSnapshot = null;
+
+function readStoredSetting(key) {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredSetting(key, value) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage write failures and keep in-memory state.
+  }
+}
+
+function applyStoredSidebarSettings() {
+  const storedView = readStoredSetting(SIDEBAR_VIEW_STORAGE_KEY);
+  const storedTab = readStoredSetting(SIDEBAR_TAB_STORAGE_KEY);
+  if (storedView === SIDEBAR_QUEUE_VIEW || storedView === SIDEBAR_SONOS_VIEW) {
+    sidebarView.value = storedView;
+  }
+  if (storedTab === QUEUE_TAB || storedTab === HISTORY_TAB) {
+    activeQueueTab.value = storedTab;
+  }
+}
 
 const filteredQueue = computed(() => {
   if (!searchText.value.trim()) return queue.value;
@@ -375,7 +446,16 @@ function startPlaybackTicker() {
   }, 1000);
 }
 
+watch(sidebarView, (value) => {
+  writeStoredSetting(SIDEBAR_VIEW_STORAGE_KEY, value);
+});
+
+watch(activeQueueTab, (value) => {
+  writeStoredSetting(SIDEBAR_TAB_STORAGE_KEY, value);
+});
+
 onMounted(async () => {
+  applyStoredSidebarSettings();
   await Promise.all([refreshCore(), refreshSonos()]);
   startPlaybackTicker();
   unsubscribeWsSnapshot = onEventBus("ws:snapshot", (payload) => {

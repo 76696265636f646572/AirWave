@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import ui from "@nuxt/ui/vite";
+import Pages from "vite-plugin-pages";
 import { resolve } from "path";
 
 export default defineConfig({
   root: resolve(__dirname, "frontend"),
-  plugins: [vue(), ui()],
+  plugins: [Pages({ dirs: "src/pages", extensions: ["vue"] }), vue(), ui()],
   build: {
     outDir: resolve(__dirname, "app/static/dist"),
     emptyOutDir: true,

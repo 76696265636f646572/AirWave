@@ -1,5 +1,5 @@
 <template>
-  <aside class="min-h-0 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+  <aside class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3 flex flex-col">
     <h2 class="text-2xl font-bold">Playlists</h2>
     <form class="mt-3 flex gap-2" @submit.prevent="submitCreatePlaylist">
       <input
@@ -14,7 +14,7 @@
       </UButton>
     </form>
 
-    <ul class="mt-3 max-h-[60vh] space-y-2 overflow-auto pr-1">
+    <ul class="mt-3 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
       <li
         v-for="playlist in playlists"
         :key="playlist.id"

@@ -1,7 +1,7 @@
 <template>
-  <section class="min-h-0 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+  <section class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3 flex flex-col">
     <h2 class="text-2xl font-bold">Queue</h2>
-    <ul class="mt-3 max-h-[34vh] space-y-2 overflow-auto pr-1">
+    <ul class="mt-3 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
       <li v-for="item in queue" :key="item.id" class="rounded-md border border-neutral-700 p-2">
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div class="min-w-0 flex-1">
