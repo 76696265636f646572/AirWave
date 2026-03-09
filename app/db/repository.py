@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import Iterator, Optional
 
-from sqlalchemy import Engine, Select, create_engine, delete, func, select
+from sqlalchemy import Engine, Select, create_engine, delete, func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import Base, PlayHistory, Playlist, PlaylistEntry, QueueItem, QueueStatus, Setting
@@ -155,6 +155,16 @@ class Repository:
     def get_playlist(self, playlist_id: uuid.UUID) -> Optional[Playlist]:
         with self.session() as session:
             return session.get(Playlist, playlist_id)
+
+    def delete_playlist(self, playlist_id: uuid.UUID) -> bool:
+        with self.session() as session:
+            playlist = session.get(Playlist, playlist_id)
+            if playlist is None:
+                return False
+            session.execute(update(QueueItem).where(QueueItem.playlist_id == playlist_id).values(playlist_id=None))
+            session.execute(delete(PlaylistEntry).where(PlaylistEntry.playlist_id == playlist_id))
+            session.delete(playlist)
+            return True
 
     def replace_playlist_entries(self, playlist_id: uuid.UUID, entries: list[NewPlaylistEntry]) -> list[PlaylistEntry]:
         with self.session() as session:

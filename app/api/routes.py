@@ -325,6 +325,18 @@ def update_playlist(playlist_id: UUID, payload: UpdatePlaylistRequest, request: 
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@api_router.delete("/playlists/{playlist_id}")
+def delete_playlist(playlist_id: UUID, request: Request) -> dict[str, Any]:
+    try:
+        _services(request)["playlist"].delete_playlist(playlist_id)
+        _publish_ui_snapshot(request)
+        return {"ok": True}
+    except ValueError as exc:
+        if "not found" in str(exc).lower():
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @api_router.post("/playlists/{playlist_id}/play-now")
 def play_playlist_now(playlist_id: UUID, request: Request) -> dict[str, Any]:
     services = _services(request)

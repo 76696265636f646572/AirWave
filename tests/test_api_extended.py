@@ -90,6 +90,10 @@ class FakePlaylistService:
             raise ValueError("Playlist entry not found")
         return {"ok": True, "count": 1, "item_ids": [13]}
 
+    def delete_playlist(self, playlist_id: uuid.UUID) -> None:
+        if playlist_id != TEST_PLAYLIST_UUID:
+            raise ValueError("Playlist not found")
+
 
 @dataclass
 class FakeEngine:
@@ -321,6 +325,13 @@ def test_playlist_library_endpoints(tmp_path):
 
         missing_entry_queue = client.post("/api/playlists/entries/999/queue")
         assert missing_entry_queue.status_code == 404
+
+        deleted = client.delete(f"/api/playlists/{TEST_PLAYLIST_UUID}")
+        assert deleted.status_code == 200
+        assert deleted.json() == {"ok": True}
+
+        missing_delete = client.delete("/api/playlists/00000000-0000-0000-0000-000000000001")
+        assert missing_delete.status_code == 404
 
 
 def test_search_endpoint(tmp_path):

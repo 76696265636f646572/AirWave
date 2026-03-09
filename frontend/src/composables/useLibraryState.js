@@ -132,6 +132,16 @@ export function useLibraryState() {
     }
   }
 
+  async function deletePlaylist(playlistId) {
+    try {
+      await fetchJson(`/api/playlists/${playlistId}`, { method: "DELETE" });
+      await refreshPlaylists();
+      notifySuccess("Playlist deleted");
+    } catch (error) {
+      notifyError("Could not delete playlist", error);
+    }
+  }
+
   async function clearHistory() {
     try {
       await fetchJson("/api/history", { method: "DELETE" });
@@ -161,6 +171,7 @@ export function useLibraryState() {
     playPlaylistNow,
     renamePlaylist,
     setPlaylistPinned,
+    deletePlaylist,
     clearHistory,
     skipCurrent,
   };

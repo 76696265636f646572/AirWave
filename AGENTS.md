@@ -103,6 +103,7 @@ If you change Vue files, composables, or router behavior, run `npm run build` so
 - Prefer keeping UI action logic in the component that renders the control when behavior is local to that component; emit events when parent coordination is required for shared state, navigation, or cross-component side effects.
 - Match the existing Vue style in touched files. Current code uses `<script setup>`, double quotes, and composition API primitives.
 - When adding UI that depends on backend payloads, verify the shape against the API response instead of assuming fields.
+- Use in-app modals (e.g. `UModal`) for confirmations and editing flows. Do not use browser `confirm()`, `alert()`, or `prompt()` so that UX stays consistent with the rest of the app.
 
 ## Change Guidance
 
