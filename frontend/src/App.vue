@@ -321,8 +321,13 @@ async function onCreatePlaylist(title) {
   }
 }
 
-function onSelectPlaylist(playlistId) {
+async function onSelectPlaylist(playlistId) {
   activePlaylistId.value = playlistId;
+  try {
+    await router.push({ path: `/playlist/${playlistId}` });
+  } catch {
+    // Ignore navigation errors for repeated clicks on the same route.
+  }
 }
 
 async function onQueuePlaylist(playlistId) {
@@ -476,6 +481,18 @@ watch(
   ([path, query]) => {
     if (path !== "/search") return;
     searchText.value = firstQueryValue(query);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => [route.path, route.params.id],
+  ([path, playlistId]) => {
+    if (!path.startsWith("/playlist/")) {
+      activePlaylistId.value = null;
+      return;
+    }
+    activePlaylistId.value = Array.isArray(playlistId) ? playlistId[0] || null : playlistId || null;
   },
   { immediate: true },
 );
