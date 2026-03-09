@@ -37,6 +37,9 @@
               placeholder="Find a playlist"
               class="min-w-0 flex-1 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-0"
               @click.stop
+              @keydown.stop
+              @keyup.stop
+              @keypress.stop
             />
           </div>
         </template>
