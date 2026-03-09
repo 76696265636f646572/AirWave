@@ -2,9 +2,9 @@
   <aside class="min-h-0 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3">
     <div class="mb-3 flex items-center justify-between gap-2">
       <h2 class="text-2xl font-bold">Sonos</h2>
-      <button type="button" class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm hover:bg-neutral-700" @click="$emit('refresh')">
+      <UButton type="button" color="primary" variant="soft" size="sm" @click="$emit('refresh')">
         Refresh
-      </button>
+      </UButton>
     </div>
 
     <ul class="max-h-[66vh] space-y-2 overflow-auto pr-1">
@@ -14,9 +14,9 @@
             <div class="text-lg font-semibold leading-5">{{ speaker.name }}</div>
             <div class="text-xs text-neutral-400">{{ speaker.ip }}</div>
           </div>
-          <button type="button" class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm hover:bg-neutral-700" @click="$emit('play', speaker.ip)">
+          <UButton type="button" color="primary" variant="solid" size="sm" @click="$emit('play', speaker.ip)">
             Play
-          </button>
+          </UButton>
         </div>
 
         <div class="mt-2 flex flex-wrap items-center gap-2">
@@ -30,31 +30,36 @@
               {{ coordinator.name }}
             </option>
           </select>
-          <button
+          <UButton
             type="button"
-            class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm hover:bg-neutral-700"
+            color="neutral"
+            variant="outline"
+            size="sm"
             @click="$emit('group', { coordinatorIp: groupTargets[speaker.ip], memberIp: speaker.ip })"
           >
             Group
-          </button>
-          <button
+          </UButton>
+          <UButton
             v-if="isGrouped(speaker)"
             type="button"
-            class="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm hover:bg-neutral-800"
+            color="warning"
+            variant="ghost"
+            size="sm"
             @click="$emit('ungroup', speaker.ip)"
           >
             Ungroup
-          </button>
+          </UButton>
         </div>
 
         <label class="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-sm">
           <span>Volume</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            :value="speaker.volume ?? 0"
-            @change="$emit('set-volume', { ip: speaker.ip, volume: Number($event.target.value) })"
+          <USlider
+            :model-value="speaker.volume ?? 0"
+            :min="0"
+            :max="100"
+            color="neutral"
+            size="md"
+            @update:model-value="$emit('set-volume', { ip: speaker.ip, volume: Number($event ?? 0) })"
           />
           <span>{{ speaker.volume ?? 0 }}</span>
         </label>

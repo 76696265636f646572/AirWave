@@ -20,5 +20,8 @@ declare module 'vue' {
     SonosPanel: typeof import('./src/components/SonosPanel.vue')['default']
     TopBar: typeof import('./src/components/TopBar.vue')['default']
     UApp: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/App.vue')['default']
+    UButton: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
+    UProgress: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Progress.vue')['default']
+    USlider: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Slider.vue')['default']
   }
 }

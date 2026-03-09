@@ -11,13 +11,9 @@
           @input="$emit('search-text-change', $event.target.value)"
           @keydown.enter.prevent="$emit('search', searchText)"
         />
-        <button
-          type="button"
-          class="h-10 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm hover:bg-neutral-700"
-          @click="$emit('search', searchText)"
-        >
+        <UButton type="button" color="primary" variant="solid" size="md" @click="$emit('search', searchText)">
           Search
-        </button>
+        </UButton>
       </div>
     </div>
 
@@ -29,16 +25,12 @@
         required
         class="h-10 min-w-[220px] flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm"
       />
-      <button type="submit" class="h-10 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm hover:bg-neutral-700">
+      <UButton type="submit" color="primary" variant="solid" size="md">
         Add URL
-      </button>
-      <button
-        type="button"
-        class="h-10 rounded-md border border-neutral-700 bg-neutral-900 px-3 text-sm hover:bg-neutral-800"
-        @click="emitPlayUrl"
-      >
+      </UButton>
+      <UButton type="button" color="neutral" variant="outline" size="md" @click="emitPlayUrl">
         Play URL
-      </button>
+      </UButton>
     </form>
 
     <div v-if="searchResults.length" class="mt-3">
@@ -50,20 +42,12 @@
           class="flex flex-wrap items-center gap-2 rounded-md border border-neutral-700 px-2 py-2"
         >
           <span class="min-w-0 flex-1 truncate text-sm">{{ item.title || item.source_url }}</span>
-          <button
-            type="button"
-            class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs hover:bg-neutral-700"
-            @click="$emit('add-url', item.source_url)"
-          >
+          <UButton type="button" color="primary" variant="soft" size="xs" @click="$emit('add-url', item.source_url)">
             Add
-          </button>
-          <button
-            type="button"
-            class="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs hover:bg-neutral-800"
-            @click="$emit('play-url', item.source_url)"
-          >
+          </UButton>
+          <UButton type="button" color="neutral" variant="outline" size="xs" @click="$emit('play-url', item.source_url)">
             Play
-          </button>
+          </UButton>
         </li>
       </ul>
     </div>

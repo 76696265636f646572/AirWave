@@ -23,7 +23,13 @@
       </div>
 
       <div class="flex min-w-0 items-center gap-2">
-        <progress class="h-2 w-full overflow-hidden rounded bg-neutral-700" :max="100" :value="state.progress_percent || 0"></progress>
+        <UProgress
+          :model-value="state.progress_percent || 0"
+          :max="100"
+          color="neutral"
+          size="md"
+          class="w-full"
+        />
         <span class="w-20 shrink-0 text-right text-xs text-neutral-400">
           {{ prettyTime(state.elapsed_seconds) }} / {{ prettyTime(state.duration_seconds) }}
         </span>
@@ -38,13 +44,29 @@
         >
           Stream
         </a>
-        <button
+        <UButton
           type="button"
-          class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs hover:bg-neutral-700"
-          @click="$emit('skip')"
+          color="primary"
+          variant="soft"
+          size="xs"
+          :disabled="!state.stream_url || isLocalPlaybackActive"
+          @click="startLocalPlayback"
         >
+          Play Local
+        </UButton>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="outline"
+          size="xs"
+          :disabled="!isLocalPlaybackActive"
+          @click="stopLocalPlayback"
+        >
+          Stop Local
+        </UButton>
+        <UButton type="button" color="neutral" variant="outline" size="xs" @click="$emit('skip')">
           Skip
-        </button>
+        </UButton>
       </div>
     </div>
 
@@ -53,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 const props = defineProps({
   state: {
@@ -65,19 +87,55 @@ const props = defineProps({
 defineEmits(["skip"]);
 
 const audioEl = ref(null);
+const wantsLocalPlayback = ref(false);
+
+const isLocalPlaybackActive = computed(() => wantsLocalPlayback.value && Boolean(props.state.stream_url));
+
+async function startLocalPlayback() {
+  if (!audioEl.value || !props.state.stream_url) return;
+  wantsLocalPlayback.value = true;
+  audioEl.value.load();
+  try {
+    await audioEl.value.play();
+  } catch {
+    wantsLocalPlayback.value = false;
+  }
+}
+
+function stopLocalPlayback() {
+  wantsLocalPlayback.value = false;
+  if (!audioEl.value) return;
+  audioEl.value.pause();
+  try {
+    audioEl.value.currentTime = 0;
+  } catch {
+    // Some live streams do not support seeking back to the start.
+  }
+}
 
 watch(
   () => props.state.stream_url,
   async (streamUrl) => {
-    if (!streamUrl || !audioEl.value) return;
+    if (!audioEl.value) return;
+    if (!streamUrl) {
+      stopLocalPlayback();
+      return;
+    }
+    if (!wantsLocalPlayback.value) return;
+    audioEl.value.load();
     try {
       await audioEl.value.play();
     } catch {
-      // Browser autoplay policies may block playback until user interaction.
+      wantsLocalPlayback.value = false;
     }
   },
   { immediate: true }
 );
+
+onUnmounted(() => {
+  if (!audioEl.value) return;
+  audioEl.value.pause();
+});
 
 function prettyTime(value) {
   const totalSeconds = Math.max(0, Math.floor(value || 0));

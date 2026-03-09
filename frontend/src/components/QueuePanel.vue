@@ -9,35 +9,37 @@
             <span class="text-xs text-neutral-400">{{ item.status }} · {{ item.channel || "unknown" }}</span>
           </div>
           <div class="flex flex-wrap justify-end gap-1">
-            <button
+            <UButton
               type="button"
-              class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs hover:bg-neutral-700"
+              color="neutral"
+              variant="outline"
+              size="xs"
               @click="$emit('reorder', { itemId: item.id, newPosition: Math.max(0, item.queue_position - 2) })"
             >
               Up
-            </button>
-            <button
+            </UButton>
+            <UButton
               type="button"
-              class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs hover:bg-neutral-700"
+              color="neutral"
+              variant="outline"
+              size="xs"
               @click="$emit('reorder', { itemId: item.id, newPosition: item.queue_position })"
             >
               Down
-            </button>
-            <button
-              type="button"
-              class="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs hover:bg-neutral-800"
-              @click="$emit('remove', item.id)"
-            >
+            </UButton>
+            <UButton type="button" color="error" variant="ghost" size="xs" @click="$emit('remove', item.id)">
               Remove
-            </button>
-            <button
+            </UButton>
+            <UButton
               type="button"
+              color="primary"
+              variant="soft"
+              size="xs"
               :disabled="!activePlaylistId"
-              class="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
               @click="$emit('save-to-playlist', item)"
             >
               Save
-            </button>
+            </UButton>
           </div>
         </div>
       </li>

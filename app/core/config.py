@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     yt_dlp_path: str = "./bin/yt-dlp"
     ffmpeg_path: str = "ffmpeg"
     mp3_bitrate: str = "128k"
-    chunk_size: int = 4096
+    chunk_size: int = 2048
     queue_poll_seconds: float = Field(default=1.0, ge=0.1, le=10.0)
     history_limit: int = 50
 

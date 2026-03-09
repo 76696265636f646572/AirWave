@@ -9,9 +9,9 @@
         required
         class="h-10 min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm"
       />
-      <button type="submit" class="h-10 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm hover:bg-neutral-700">
+      <UButton type="submit" color="primary" variant="solid" size="md">
         Create
-      </button>
+      </UButton>
     </form>
 
     <ul class="mt-3 max-h-[60vh] space-y-2 overflow-auto pr-1">
@@ -21,17 +21,22 @@
         class="flex items-start gap-2 rounded-md border border-neutral-700 p-2"
         :class="playlist.id === activePlaylistId ? 'bg-neutral-800' : ''"
       >
-        <button type="button" class="min-w-0 flex-1 text-left" @click="$emit('select-playlist', playlist.id)">
-          <span class="block truncate text-sm font-medium">{{ playlist.title }}</span>
-          <span class="text-xs text-neutral-400">{{ playlist.kind }} · {{ playlist.entry_count }}</span>
-        </button>
-        <button
+        <UButton
           type="button"
-          class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs hover:bg-neutral-700"
-          @click="$emit('queue-playlist', playlist.id)"
+          :color="playlist.id === activePlaylistId ? 'primary' : 'neutral'"
+          :variant="playlist.id === activePlaylistId ? 'soft' : 'ghost'"
+          size="sm"
+          class="min-w-0 flex-1 justify-start"
+          @click="$emit('select-playlist', playlist.id)"
         >
+          <div class="min-w-0 text-left">
+            <span class="block truncate text-sm font-medium">{{ playlist.title }}</span>
+            <span class="block text-xs text-neutral-400">{{ playlist.kind }} · {{ playlist.entry_count }}</span>
+          </div>
+        </UButton>
+        <UButton type="button" color="neutral" variant="outline" size="xs" @click="$emit('queue-playlist', playlist.id)">
           Queue
-        </button>
+        </UButton>
       </li>
     </ul>
   </aside>
