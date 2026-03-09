@@ -85,6 +85,30 @@ class Repository:
             session.flush()
             return created
 
+    def replace_queued_items(self, items: list[NewQueueItem]) -> list[QueueItem]:
+        with self._queue_lock, self.session() as session:
+            session.execute(update(QueueItem).where(QueueItem.status == QueueStatus.queued).values(status=QueueStatus.removed))
+            if not items:
+                return []
+            created: list[QueueItem] = []
+            for position, item in enumerate(items, start=1):
+                queue_item = QueueItem(
+                    source_url=item.source_url,
+                    normalized_url=item.normalized_url,
+                    source_type=item.source_type,
+                    title=item.title,
+                    channel=item.channel,
+                    duration_seconds=item.duration_seconds,
+                    thumbnail_url=item.thumbnail_url,
+                    playlist_id=item.playlist_id,
+                    status=QueueStatus.queued,
+                    queue_position=position,
+                )
+                session.add(queue_item)
+                created.append(queue_item)
+            session.flush()
+            return created
+
     def list_queue(self) -> list[QueueItem]:
         with self.session() as session:
             stmt: Select[tuple[QueueItem]] = select(QueueItem).where(
@@ -218,7 +242,7 @@ class Repository:
             stmt = select(PlaylistEntry).where(PlaylistEntry.playlist_id == playlist_id).order_by(PlaylistEntry.position.asc())
             return list(session.scalars(stmt).all())
 
-    def queue_playlist(self, playlist_id: uuid.UUID) -> list[QueueItem]:
+    def queue_playlist(self, playlist_id: uuid.UUID, *, replace: bool = False) -> list[QueueItem]:
         entries = self.list_playlist_entries(playlist_id)
         new_items = [
             NewQueueItem(
@@ -233,6 +257,8 @@ class Repository:
             )
             for entry in entries
         ]
+        if replace:
+            return self.replace_queued_items(new_items)
         return self.enqueue_items(new_items)
 
     def queue_playlist_entry(self, entry_id: int) -> Optional[QueueItem]:

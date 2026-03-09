@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from app.db.repository import Repository
+from app.db.models import QueueStatus
+from app.db.repository import NewQueueItem, Repository
 from app.services.playlist_service import PlaylistService
 from app.services.yt_dlp_service import PlaylistPreview, ResolvedTrack
 
@@ -72,6 +73,37 @@ def test_import_playlist(tmp_path):
     assert result["count"] == 2
     queue = repo.list_queue()
     assert len(queue) == 2
+
+
+def test_import_playlist_endpoint_behavior_is_library_only(tmp_path):
+    repo = Repository(f"sqlite+pysqlite:///{tmp_path}/playlist_import_only.db")
+    repo.init_db()
+    service = PlaylistService(repo, FakeYtDlp(playlist=True))
+
+    result = service.import_playlist("https://youtube.com/playlist?list=x")
+    assert result["type"] == "playlist"
+    assert result["count"] == 2
+    assert "item_ids" not in result
+    assert len(repo.list_playlists()) == 1
+    assert repo.list_queue() == []
+
+
+def test_queue_playlist_replace_swaps_existing_queue(tmp_path):
+    repo = Repository(f"sqlite+pysqlite:///{tmp_path}/playlist_replace.db")
+    repo.init_db()
+    service = PlaylistService(repo, FakeYtDlp(playlist=True))
+    repo.enqueue_items([NewQueueItem(source_url="u1", normalized_url="u1", source_type="video", title="seed")])
+
+    imported = service.import_playlist("https://youtube.com/playlist?list=x")
+    queued = service.queue_playlist(imported["playlist_id"], replace=True)
+
+    assert queued["count"] == 2
+    queue = repo.list_queue()
+    queued_items = [item for item in queue if item.status == QueueStatus.queued]
+    removed_items = [item for item in queue if item.status == QueueStatus.removed]
+    assert len(queued_items) == 2
+    assert len(removed_items) == 1
+    assert all(item.source_type == "playlist_item" for item in queued_items)
 
 
 def test_update_playlist_rename_and_pin(tmp_path):

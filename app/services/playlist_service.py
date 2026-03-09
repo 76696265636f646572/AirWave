@@ -13,7 +13,13 @@ class PlaylistService:
 
     def add_url(self, url: str) -> dict:
         if self.yt_dlp_service.is_playlist_url(url):
-            return self.import_playlist(url)
+            imported = self.import_playlist(url)
+            queued = self.queue_playlist(imported["playlist_id"])
+            return {
+                **imported,
+                "count": queued["count"],
+                "item_ids": queued["item_ids"],
+            }
         resolved = self.yt_dlp_service.resolve_video(url)
         created = self.repository.enqueue_items(
             [
@@ -58,26 +64,11 @@ class PlaylistService:
             for entry in preview.entries
         ]
         self.repository.replace_playlist_entries(playlist.id, entries)
-        items = [
-            NewQueueItem(
-                source_url=entry.source_url,
-                normalized_url=entry.normalized_url,
-                source_type="playlist_item",
-                title=entry.title,
-                channel=entry.channel,
-                duration_seconds=entry.duration_seconds,
-                thumbnail_url=entry.thumbnail_url,
-                playlist_id=playlist.id,
-            )
-            for entry in entries
-        ]
-        created = self.repository.enqueue_items(items)
         return {
             "type": "playlist",
-            "count": len(created),
+            "count": len(entries),
             "title": preview.title,
             "playlist_id": playlist.id,
-            "item_ids": [item.id for item in created],
         }
 
     def _serialize_playlist(self, playlist) -> dict:
@@ -152,8 +143,8 @@ class PlaylistService:
             "position": entry.position,
         }
 
-    def queue_playlist(self, playlist_id: uuid.UUID) -> dict:
-        created = self.repository.queue_playlist(playlist_id)
+    def queue_playlist(self, playlist_id: uuid.UUID, *, replace: bool = False) -> dict:
+        created = self.repository.queue_playlist(playlist_id, replace=replace)
         return {"ok": True, "count": len(created), "item_ids": [item.id for item in created]}
 
     def queue_playlist_entry(self, entry_id: int) -> dict:

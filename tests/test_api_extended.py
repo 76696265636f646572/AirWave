@@ -19,6 +19,7 @@ TEST_ENTRY_ID = 501
 @dataclass
 class FakePlaylistService:
     next_playlist_id: int = 100
+    queue_replace_requested: bool = False
 
     def add_url(self, url: str) -> dict:
         return {"type": "video", "count": 1, "title": f"added:{url}", "item_ids": [1]}
@@ -80,7 +81,8 @@ class FakePlaylistService:
             "position": 2,
         }
 
-    def queue_playlist(self, playlist_id: uuid.UUID) -> dict:
+    def queue_playlist(self, playlist_id: uuid.UUID, *, replace: bool = False) -> dict:
+        self.queue_replace_requested = replace
         if playlist_id != TEST_PLAYLIST_UUID:
             return {"ok": True, "count": 0, "item_ids": []}
         return {"ok": True, "count": 2, "item_ids": [11, 12]}
@@ -278,6 +280,25 @@ def test_play_now_endpoint_triggers_skip(tmp_path):
         payload = play_now.json()
         assert payload["ok"] is True
         assert payload["item_ids"] == [1]
+        assert fake_engine.skipped is True
+
+
+def test_play_now_playlist_url_replaces_queue(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        fake_engine = FakeEngine()
+        fake_playlist = FakePlaylistService()
+        app.state.playlist_service = fake_playlist
+        app.state.stream_engine = fake_engine
+        app.state.yt_dlp_service = SimpleNamespace(is_playlist_url=lambda url: "playlist" in url)
+
+        play_now = client.post("/api/queue/play-now", json={"url": "https://www.youtube.com/playlist?list=abc"})
+        assert play_now.status_code == 200
+        payload = play_now.json()
+        assert payload["ok"] is True
+        assert payload["type"] == "playlist"
+        assert payload["item_ids"] == [11, 12]
+        assert fake_playlist.queue_replace_requested is True
         assert fake_engine.skipped is True
 
 

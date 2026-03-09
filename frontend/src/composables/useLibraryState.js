@@ -46,12 +46,16 @@ export function useLibraryState() {
 
   async function addUrl(url) {
     try {
-      await fetchJson("/api/queue/add", {
+      const result = await fetchJson("/api/queue/add", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      notifySuccess("Added to queue", "URL added successfully.");
+      if (result?.type === "playlist") {
+        notifySuccess("Playlist queued", `${result.count || 0} playlist items added to queue.`);
+      } else {
+        notifySuccess("Added to queue", "URL added successfully.");
+      }
     } catch (error) {
       notifyError("Could not add URL", error);
     }
@@ -59,14 +63,31 @@ export function useLibraryState() {
 
   async function playUrl(url) {
     try {
-      await fetchJson("/api/queue/play-now", {
+      const result = await fetchJson("/api/queue/play-now", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      notifySuccess("Playing now", "URL queued and playback started.");
+      if (result?.type === "playlist") {
+        notifySuccess("Playing playlist", "Queue replaced and playlist playback started.");
+      } else {
+        notifySuccess("Playing now", "URL queued and playback started.");
+      }
     } catch (error) {
       notifyError("Could not play URL", error);
+    }
+  }
+
+  async function importPlaylistUrl(url) {
+    try {
+      const result = await fetchJson("/api/playlist/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      notifySuccess("Playlist imported", `${result.count || 0} items saved to playlist library.`);
+    } catch (error) {
+      notifyError("Could not import playlist", error);
     }
   }
 
@@ -166,6 +187,7 @@ export function useLibraryState() {
     playlists,
     addUrl,
     playUrl,
+    importPlaylistUrl,
     createPlaylist,
     queuePlaylist,
     playPlaylistNow,

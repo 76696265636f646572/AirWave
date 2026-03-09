@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <form class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" @submit.prevent="emitAddUrl">
+    <form class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" @submit.prevent="emitQueueUrl">
       <input
         v-model="urlInput"
         type="url"
@@ -33,12 +33,46 @@
         class="h-10 w-full min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm"
       />
       <div class="flex w-full gap-2 sm:w-auto">
-      <UButton type="submit" color="primary" variant="solid" size="md" class="flex-1 sm:flex-none">
-        {{ isPlaylistUrl ? "Add to Playlists" : "Add URL" }}
-      </UButton>
-      <UButton type="button" color="neutral" variant="outline" size="md" class="flex-1 sm:flex-none" @click="emitPlayUrl">
-        {{ isPlaylistUrl ? "Play Playlist" : "Play URL" }}
-      </UButton>
+        <template v-if="isPlaylistUrl">
+          <UButton
+            type="button"
+            color="success"
+            variant="solid"
+            size="md"
+            class="flex-1 sm:flex-none"
+            @click="emitImportPlaylist"
+          >
+            Import playlist
+          </UButton>
+          <UButton type="submit" color="neutral" variant="outline" size="md" class="flex-1 sm:flex-none">
+            Queue Playlist
+          </UButton>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="outline"
+            size="md"
+            class="flex-1 sm:flex-none"
+            @click="emitPlayUrl"
+          >
+            Play Playlist
+          </UButton>
+        </template>
+        <template v-else>
+          <UButton type="submit" color="primary" variant="solid" size="md" class="flex-1 sm:flex-none">
+            Add URL
+          </UButton>
+          <UButton
+            type="button"
+            color="neutral"
+            variant="outline"
+            size="md"
+            class="flex-1 sm:flex-none"
+            @click="emitPlayUrl"
+          >
+            Play URL
+          </UButton>
+        </template>
       </div>
     </form>
 
@@ -55,7 +89,7 @@ import { useUiState } from "../composables/useUiState";
 const urlInput = ref("");
 const router = useRouter();
 const route = useRoute();
-const { addUrl, playUrl } = useLibraryState();
+const { addUrl, playUrl, importPlaylistUrl } = useLibraryState();
 const { searchText, onSearchTextChange, onYoutubeSearch } = useUiState();
 
 /** Playlist page URL (playlist?list=...). Watch URLs are treated as single video. */
@@ -65,17 +99,28 @@ const isPlaylistUrl = computed(() => {
   return url.includes("/playlist") && url.includes("list=");
 });
 
-function emitAddUrl() {
+function consumeInputUrl() {
   const url = urlInput.value.trim();
+  if (!url) return null;
+  urlInput.value = "";
+  return url;
+}
+
+function emitImportPlaylist() {
+  const url = consumeInputUrl();
+  if (!url) return;
+  importPlaylistUrl(url);
+}
+
+function emitQueueUrl() {
+  const url = consumeInputUrl();
   if (!url) return;
   addUrl(url);
-  urlInput.value = "";
 }
 
 function emitPlayUrl() {
-  const url = urlInput.value.trim();
+  const url = consumeInputUrl();
   if (!url) return;
   playUrl(url);
-  urlInput.value = "";
 }
 </script>
