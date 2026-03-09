@@ -175,6 +175,12 @@ def history(request: Request) -> list[dict[str, Any]]:
     ]
 
 
+@router.delete("/history")
+def clear_history(request: Request) -> dict[str, bool]:
+    _services(request)["repo"].clear_history()
+    return {"ok": True}
+
+
 @router.post("/playlist/preview")
 def playlist_preview(payload: AddUrlRequest, request: Request) -> dict[str, Any]:
     preview = _services(request)["playlist"].preview_playlist(str(payload.url))

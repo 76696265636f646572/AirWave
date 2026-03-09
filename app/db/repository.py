@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import Iterator, Optional
 
-from sqlalchemy import Engine, Select, create_engine, func, select
+from sqlalchemy import Engine, Select, create_engine, delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import Base, PlayHistory, Playlist, PlaylistEntry, QueueItem, QueueStatus, Setting
@@ -95,6 +95,11 @@ class Repository:
         with self.session() as session:
             stmt = select(PlayHistory).order_by(PlayHistory.started_at.desc()).limit(limit)
             return list(session.scalars(stmt).all())
+
+    def clear_history(self) -> int:
+        with self.session() as session:
+            result = session.execute(delete(PlayHistory))
+            return int(result.rowcount or 0)
 
     def create_or_update_playlist(self, source_url: str, title: str | None, channel: str | None, entry_count: int) -> Playlist:
         with self.session() as session:

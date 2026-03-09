@@ -27,7 +27,7 @@
             @reorder="onReorderQueueItem"
             @save-to-playlist="onSaveQueueToPlaylist"
           />
-          <HistoryPanel :history="filteredHistory" />
+          <HistoryPanel :history="filteredHistory" @clear="onClearHistory" />
         </main>
 
         <SonosPanel
@@ -195,6 +195,11 @@ async function onSaveQueueToPlaylist(item) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ url: item.source_url }),
   });
+  await refreshCore();
+}
+
+async function onClearHistory() {
+  await fetchJson("/history", { method: "DELETE" });
   await refreshCore();
 }
 
