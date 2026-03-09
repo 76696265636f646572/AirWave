@@ -7,8 +7,6 @@
           :item="item"
           mode="queue"
           :playlists="playlists"
-          :on-add-to-playlist="onAddToPlaylist"
-          :on-add-to-queue="onAddToQueue"
         />
       </li>
     </ul>
@@ -21,7 +19,5 @@ import Song from "./Song.vue";
 defineProps({
   queue: { type: Array, default: () => [] },
   playlists: { type: Array, default: () => [] },
-  onAddToPlaylist: { type: Function, default: null },
-  onAddToQueue: { type: Function, default: null },
 });
 </script>

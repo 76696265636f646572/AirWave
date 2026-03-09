@@ -18,8 +18,6 @@
             :item="entry"
             mode="search"
             :playlists="playlists"
-            :on-add-to-playlist="onAddToPlaylist"
-            :on-add-to-queue="onAddToQueue"
           />
         </li>
       </ul>
@@ -36,10 +34,6 @@ import { fetchJson } from "../../composables/useApi";
 
 defineProps({
   playlists: { type: Array, default: () => [] },
-  onAddUrl: { type: Function, default: null },
-  onPlayUrl: { type: Function, default: null },
-  onAddToPlaylist: { type: Function, default: null },
-  onAddToQueue: { type: Function, default: null },
 });
 
 const route = useRoute();

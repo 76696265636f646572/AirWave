@@ -20,8 +20,6 @@
           :item="item"
           mode="history"
           :playlists="playlists"
-          :on-add-to-playlist="onAddToPlaylist"
-          :on-add-to-queue="onAddToQueue"
         />
       </li>
     </ul>
@@ -34,8 +32,6 @@ import Song from "./Song.vue";
 defineProps({
   history: { type: Array, default: () => [] },
   playlists: { type: Array, default: () => [] },
-  onAddToPlaylist: { type: Function, default: null },
-  onAddToQueue: { type: Function, default: null },
 });
 
 defineEmits(["clear"]);

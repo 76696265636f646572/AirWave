@@ -24,10 +24,6 @@
             <component
               :is="Component"
               :playlists="playlists"
-              :on-add-url="onAddUrl"
-              :on-play-url="onPlayUrl"
-              :on-add-to-playlist="onAddToPlaylist"
-              :on-add-to-queue="onAddUrl"
             />
           </RouterView>
         </main>
@@ -46,8 +42,6 @@
                   class="h-full"
                   :queue="filteredQueue"
                   :playlists="playlists"
-                  :on-add-to-playlist="onAddToPlaylist"
-                  :on-add-to-queue="onAddUrl"
                 />
               </template>
 
@@ -56,8 +50,6 @@
                   class="h-full"
                   :history="filteredHistory"
                   :playlists="playlists"
-                  :on-add-to-playlist="onAddToPlaylist"
-                  :on-add-to-queue="onAddUrl"
                   @clear="onClearHistory"
                 />
               </template>
@@ -336,28 +328,6 @@ async function onQueuePlaylist(playlistId) {
     notifySuccess("Playlist queued", "Items added to queue.");
   } catch (error) {
     notifyError("Could not queue playlist", error);
-  }
-}
-
-async function onSaveQueueToPlaylist(item) {
-  if (!activePlaylistId.value) {
-    notifyError("Select a playlist first", "Choose a playlist before saving queue items.");
-    return;
-  }
-  await onAddToPlaylist(activePlaylistId.value, item.source_url);
-}
-
-async function onAddToPlaylist(playlistId, url) {
-  if (!playlistId || !url) return;
-  try {
-    await fetchJson(`/api/playlists/${playlistId}/entries`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    notifySuccess("Saved to playlist", "Item added to playlist.");
-  } catch (error) {
-    notifyError("Could not save to playlist", error);
   }
 }
 

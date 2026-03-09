@@ -59,6 +59,7 @@
 <script setup>
 import { computed, ref } from "vue";
 
+import { fetchJson } from "../composables/useApi";
 import { formatDuration } from "../composables/useDuration";
 
 const playlistSearchTerm = ref("");
@@ -77,15 +78,9 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  onAddToPlaylist: {
-    type: Function,
-    default: null,
-  },
-  onAddToQueue: {
-    type: Function,
-    default: null,
-  },
 });
+
+const toast = useToast();
 
 const thumbnailSrc = computed(() => {
   const item = props.item;
@@ -105,23 +100,110 @@ const filteredPlaylists = computed(() => {
   return props.playlists.filter((p) => (p.title || "").toLowerCase().includes(term));
 });
 
+function errorMessage(error) {
+  const fallback = error instanceof Error ? error.message : String(error || "Request failed");
+  try {
+    const parsed = JSON.parse(fallback);
+    if (Array.isArray(parsed?.detail) && parsed.detail.length) {
+      return parsed.detail[0]?.msg || fallback;
+    }
+    if (typeof parsed?.detail === "string") {
+      return parsed.detail;
+    }
+  } catch {
+    // Keep original message when payload is plain text.
+  }
+  return fallback.length > 180 ? `${fallback.slice(0, 177)}...` : fallback;
+}
+
+function notifySuccess(title, description) {
+  toast.add({
+    title,
+    description,
+    color: "success",
+    icon: "i-lucide-check",
+    type: "foreground",
+  });
+}
+
+function notifyError(title, error) {
+  toast.add({
+    title,
+    description: errorMessage(error),
+    color: "error",
+    icon: "i-lucide-triangle-alert",
+    type: "foreground",
+  });
+}
+
+async function addToQueue(url) {
+  if (!url) return;
+  try {
+    await fetchJson("/api/queue/add", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    notifySuccess("Added to queue", "URL added successfully.");
+  } catch (error) {
+    notifyError("Could not add URL", error);
+  }
+}
+
+async function playNow(url) {
+  if (!url) return;
+  try {
+    await fetchJson("/api/queue/play-now", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    notifySuccess("Playing now", "URL queued and playback started.");
+  } catch (error) {
+    notifyError("Could not play URL", error);
+  }
+}
+
+async function addToPlaylist(playlistId, url) {
+  if (!playlistId || !url) return;
+  try {
+    await fetchJson(`/api/playlists/${playlistId}/entries`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    notifySuccess("Saved to playlist", "Item added to playlist.");
+  } catch (error) {
+    notifyError("Could not save to playlist", error);
+  } finally {
+    playlistSearchTerm.value = "";
+  }
+}
+
 const dropdownItems = computed(() => {
   const url = props.item?.source_url;
   const hasUrl = !!url;
   const items = [];
 
+  if (hasUrl) {
+    items.push([
+      {
+        label: "Play now",
+        icon: "i-lucide-play",
+        onSelect: () => playNow(url),
+      },
+    ]);
+  }
+
   const addToPlaylistChildren = [
     { type: "label", slot: "playlist-filter" },
     ...filteredPlaylists.value.map((p) => ({
       label: p.title,
-      onSelect: () => {
-        if (props.onAddToPlaylist) props.onAddToPlaylist(p.id, url);
-        playlistSearchTerm.value = "";
-      },
+      onSelect: () => addToPlaylist(p.id, url),
     })),
   ];
 
-  if (hasUrl && props.onAddToPlaylist && props.playlists.length > 0) {
+  if (hasUrl && props.playlists.length > 0) {
     items.push([
       {
         label: "Add to playlist",
@@ -131,12 +213,12 @@ const dropdownItems = computed(() => {
     ]);
   }
 
-  if (hasUrl && props.onAddToQueue) {
+  if (hasUrl) {
     items.push([
       {
         label: "Add to queue",
         icon: "i-lucide-list-music",
-        onSelect: () => props.onAddToQueue(url),
+        onSelect: () => addToQueue(url),
       },
     ]);
   }
