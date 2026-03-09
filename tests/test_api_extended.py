@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
+from app.db.repository import NewQueueItem
 from app.main import create_app
 
 
@@ -98,6 +99,14 @@ class FakeEngine:
             yield b"chunk-2"
 
         return _gen()
+
+    def playback_progress(self) -> dict:
+        return {
+            "duration_seconds": None,
+            "started_at": None,
+            "elapsed_seconds": None,
+            "progress_percent": None,
+        }
 
 
 @dataclass
@@ -343,3 +352,32 @@ def test_sonos_endpoints(tmp_path):
         assert volume.status_code == 200
         assert volume.json()["ok"] is True
         assert fake_sonos.last_volume == ("192.168.1.10", 33)
+
+
+def test_websocket_events_send_initial_snapshot_and_updates(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        created = app.state.repository.enqueue_items(
+            [
+                NewQueueItem(
+                    source_url="https://youtube.com/watch?v=track1",
+                    normalized_url="https://youtube.com/watch?v=track1",
+                    source_type="video",
+                    title="Track 1",
+                    channel="chan",
+                )
+            ]
+        )[0]
+
+        with client.websocket_connect("/ws/events") as ws:
+            initial = ws.receive_json()
+            assert initial["type"] == "snapshot"
+            assert any(item["id"] == created.id for item in initial["queue"])
+
+            removed = client.delete(f"/queue/{created.id}")
+            assert removed.status_code == 200
+            assert removed.json()["ok"] is True
+
+            updated = ws.receive_json()
+            assert updated["type"] == "snapshot"
+            assert all(item["id"] != created.id for item in updated["queue"])

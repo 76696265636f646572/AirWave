@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import router
+from app.api.routes import build_ui_snapshot, router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.repository import Repository
@@ -17,6 +17,7 @@ from app.services.ffmpeg_setup import ensure_ffmpeg_path
 from app.services.playlist_service import PlaylistService
 from app.services.sonos_service import SonosService
 from app.services.stream_engine import StreamEngine
+from app.services.ui_events import UiEventBroker
 from app.services.yt_dlp_service import YtDlpService
 
 APP_DIR = Path(__file__).resolve().parent
@@ -57,6 +58,11 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
     yt_dlp_service = YtDlpService(settings.yt_dlp_path)
     ffmpeg_path = ensure_ffmpeg_path(settings.ffmpeg_path)
     ffmpeg_pipeline = FfmpegPipeline(ffmpeg_path, bitrate=settings.mp3_bitrate)
+    ui_events = UiEventBroker()
+
+    def notify_ui_state_changed() -> None:
+        ui_events.publish_snapshot(settings.public_base_url)
+
     stream_engine = StreamEngine(
         repository=repository,
         yt_dlp_service=yt_dlp_service,
@@ -64,6 +70,7 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
         chunk_size=settings.chunk_size,
         queue_poll_seconds=settings.queue_poll_seconds,
         stats_log_seconds=settings.stream_stats_log_seconds,
+        on_state_change=notify_ui_state_changed,
     )
     playlist_service = PlaylistService(repository, yt_dlp_service)
     sonos_service = SonosService()
@@ -71,6 +78,12 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         repository.init_db()
+        ui_events.bind_loop(asyncio.get_running_loop())
+
+        async def snapshot_builder(base_url: str) -> dict[str, object]:
+            return build_ui_snapshot(app, base_url)
+
+        ui_events.set_snapshot_builder(snapshot_builder)
         if start_engine:
             stream_engine.start()
         app.state.settings = settings
@@ -80,6 +93,7 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
         app.state.stream_engine = stream_engine
         app.state.playlist_service = playlist_service
         app.state.sonos_service = sonos_service
+        app.state.ui_events = ui_events
         try:
             yield
         except asyncio.CancelledError:

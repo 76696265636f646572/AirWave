@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, HttpUrl
@@ -62,11 +63,83 @@ def _services(request: Request) -> dict[str, Any]:
         "settings": request.app.state.settings,
         "sonos": request.app.state.sonos_service,
         "yt_dlp": request.app.state.yt_dlp_service,
+        "ui_events": request.app.state.ui_events,
     }
 
 
 def _stream_url(request: Request) -> str:
     return _services(request)["settings"].stream_url_for(str(request.base_url))
+
+
+def _stream_url_from_base(settings: Any, base_url: str) -> str:
+    return settings.stream_url_for(base_url)
+
+
+def _serialize_state(engine: StreamEngine, stream_url: str) -> dict[str, Any]:
+    progress = engine.playback_progress()
+    return {
+        "mode": engine.state.mode.value,
+        "now_playing_id": engine.state.now_playing_id,
+        "now_playing_title": engine.state.now_playing_title,
+        "now_playing_channel": getattr(engine.state, "now_playing_channel", None),
+        "now_playing_thumbnail_url": getattr(engine.state, "now_playing_thumbnail_url", None),
+        "stream_url": stream_url,
+        **progress,
+    }
+
+
+def _serialize_queue_items(items: list[Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": item.id,
+            "title": item.title,
+            "source_url": item.source_url,
+            "status": item.status.value,
+            "queue_position": item.queue_position,
+            "source_type": item.source_type,
+            "channel": item.channel,
+            "duration_seconds": item.duration_seconds,
+            "thumbnail_url": item.thumbnail_url,
+            "playlist_id": item.playlist_id,
+        }
+        for item in items
+    ]
+
+
+def _serialize_history_rows(rows: list[Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": row.id,
+            "queue_item_id": row.queue_item_id,
+            "title": row.title,
+            "source_url": row.source_url,
+            "status": row.status,
+            "started_at": row.started_at,
+            "finished_at": row.finished_at,
+            "error_message": row.error_message,
+        }
+        for row in rows
+    ]
+
+
+def build_ui_snapshot(app, base_url: str) -> dict[str, Any]:
+    settings = app.state.settings
+    stream_url = _stream_url_from_base(settings, base_url)
+    engine: StreamEngine = app.state.stream_engine
+    repo = app.state.repository
+    playlist = app.state.playlist_service
+    return {
+        "type": "snapshot",
+        "state": _serialize_state(engine, stream_url),
+        "queue": _serialize_queue_items(repo.list_queue()),
+        "history": _serialize_history_rows(repo.list_history(limit=settings.history_limit)),
+        "playlists": playlist.list_playlists(),
+    }
+
+
+def _publish_ui_snapshot(request: Request) -> None:
+    services = _services(request)
+    services["ui_events"].publish_snapshot(str(request.base_url))
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -92,41 +165,19 @@ def health(request: Request) -> dict[str, str]:
 def state(request: Request) -> dict[str, Any]:
     services = _services(request)
     engine: StreamEngine = services["engine"]
-    progress = engine.playback_progress()
-    return {
-        "mode": engine.state.mode.value,
-        "now_playing_id": engine.state.now_playing_id,
-        "now_playing_title": engine.state.now_playing_title,
-        "now_playing_channel": getattr(engine.state, "now_playing_channel", None),
-        "now_playing_thumbnail_url": getattr(engine.state, "now_playing_thumbnail_url", None),
-        "stream_url": _stream_url(request),
-        **progress,
-    }
+    return _serialize_state(engine, _stream_url(request))
 
 
 @router.get("/queue")
 def list_queue(request: Request) -> list[dict[str, Any]]:
     queue = _services(request)["repo"].list_queue()
-    return [
-        {
-            "id": item.id,
-            "title": item.title,
-            "source_url": item.source_url,
-            "status": item.status.value,
-            "queue_position": item.queue_position,
-            "source_type": item.source_type,
-            "channel": item.channel,
-            "duration_seconds": item.duration_seconds,
-            "thumbnail_url": item.thumbnail_url,
-            "playlist_id": item.playlist_id,
-        }
-        for item in queue
-    ]
+    return _serialize_queue_items(queue)
 
 
 @router.post("/queue/add")
 def add_to_queue(payload: AddUrlRequest, request: Request) -> dict[str, Any]:
     result = _services(request)["playlist"].add_url(str(payload.url))
+    _publish_ui_snapshot(request)
     return {"ok": True, **result}
 
 
@@ -138,6 +189,7 @@ def play_now(payload: AddUrlRequest, request: Request) -> dict[str, Any]:
     if item_ids:
         services["repo"].move_item_to_front(item_ids[0])
     services["engine"].skip_current()
+    _publish_ui_snapshot(request)
     return {"ok": True, **result}
 
 
@@ -146,6 +198,7 @@ def reorder_queue(item_id: int, payload: ReorderRequest, request: Request) -> di
     ok = _services(request)["repo"].reorder_item(item_id=item_id, new_position=payload.new_position)
     if not ok:
         raise HTTPException(status_code=404, detail="Queue item not found")
+    _publish_ui_snapshot(request)
     return {"ok": True}
 
 
@@ -158,12 +211,14 @@ def remove_queue_item(item_id: int, request: Request) -> dict[str, bool]:
     ok = services["repo"].remove_item(item_id=item_id)
     if item.status.value == "playing":
         services["engine"].skip_current()
+    _publish_ui_snapshot(request)
     return {"ok": ok}
 
 
 @router.post("/queue/skip")
 def skip_current(request: Request) -> dict[str, bool]:
     _services(request)["engine"].skip_current()
+    _publish_ui_snapshot(request)
     return {"ok": True}
 
 
@@ -171,24 +226,13 @@ def skip_current(request: Request) -> dict[str, bool]:
 def history(request: Request) -> list[dict[str, Any]]:
     services = _services(request)
     rows = services["repo"].list_history(limit=services["settings"].history_limit)
-    return [
-        {
-            "id": row.id,
-            "queue_item_id": row.queue_item_id,
-            "title": row.title,
-            "source_url": row.source_url,
-            "status": row.status,
-            "started_at": row.started_at,
-            "finished_at": row.finished_at,
-            "error_message": row.error_message,
-        }
-        for row in rows
-    ]
+    return _serialize_history_rows(rows)
 
 
 @router.delete("/history")
 def clear_history(request: Request) -> dict[str, bool]:
     _services(request)["repo"].clear_history()
+    _publish_ui_snapshot(request)
     return {"ok": True}
 
 
@@ -207,6 +251,7 @@ def playlist_preview(payload: AddUrlRequest, request: Request) -> dict[str, Any]
 @router.post("/playlist/import")
 def playlist_import(payload: AddUrlRequest, request: Request) -> dict[str, Any]:
     result = _services(request)["playlist"].import_playlist(str(payload.url))
+    _publish_ui_snapshot(request)
     return {"ok": True, **result}
 
 
@@ -217,7 +262,9 @@ def playlists(request: Request) -> list[dict[str, Any]]:
 
 @router.post("/playlists/custom")
 def create_custom_playlist(payload: CreateCustomPlaylistRequest, request: Request) -> dict[str, Any]:
-    return _services(request)["playlist"].create_custom_playlist(payload.title.strip())
+    result = _services(request)["playlist"].create_custom_playlist(payload.title.strip())
+    _publish_ui_snapshot(request)
+    return result
 
 
 @router.get("/playlists/{playlist_id}")
@@ -237,22 +284,43 @@ def playlist_entries(playlist_id: int, request: Request) -> list[dict[str, Any]]
 @router.post("/playlists/{playlist_id}/entries")
 def add_playlist_entry(playlist_id: int, payload: AddUrlRequest, request: Request) -> dict[str, Any]:
     try:
-        return _services(request)["playlist"].add_item_to_playlist(playlist_id=playlist_id, url=str(payload.url))
+        result = _services(request)["playlist"].add_item_to_playlist(playlist_id=playlist_id, url=str(payload.url))
+        _publish_ui_snapshot(request)
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/playlists/{playlist_id}/queue")
 def queue_playlist(playlist_id: int, request: Request) -> dict[str, Any]:
-    return _services(request)["playlist"].queue_playlist(playlist_id)
+    result = _services(request)["playlist"].queue_playlist(playlist_id)
+    _publish_ui_snapshot(request)
+    return result
 
 
 @router.post("/playlists/entries/{entry_id}/queue")
 def queue_playlist_entry(entry_id: int, request: Request) -> dict[str, Any]:
     try:
-        return _services(request)["playlist"].queue_playlist_entry(entry_id)
+        result = _services(request)["playlist"].queue_playlist_entry(entry_id)
+        _publish_ui_snapshot(request)
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.websocket("/ws/events")
+async def websocket_events(websocket: WebSocket) -> None:
+    broker = websocket.app.state.ui_events
+    base_url = str(websocket.base_url)
+    queue = await broker.add_client(websocket, base_url)
+    try:
+        while True:
+            payload = await queue.get()
+            await websocket.send_json(jsonable_encoder(payload))
+    except WebSocketDisconnect:
+        return
+    finally:
+        await broker.remove_client(queue)
 
 
 @router.get("/search/youtube")

@@ -47,7 +47,7 @@ test.describe('mytube smoke + overflow', () => {
   ]) {
     test(`smoke ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      const resp = await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 30000 });
+      const resp = await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       expect(resp && resp.status()).toBe(200);
 
       await expect(page.locator('#app')).toBeVisible();

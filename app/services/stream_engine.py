@@ -7,7 +7,7 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Generator
+from typing import Callable, Generator
 
 from app.db.models import QueueStatus
 from app.db.repository import Repository
@@ -98,6 +98,7 @@ class StreamEngine:
         queue_poll_seconds: float = 1.0,
         playback_retry_count: int = 2,
         stats_log_seconds: float = 15.0,
+        on_state_change: Callable[[], None] | None = None,
     ) -> None:
         self.repository = repository
         self.yt_dlp_service = yt_dlp_service
@@ -121,6 +122,15 @@ class StreamEngine:
         self._tracks_completed = 0
         self._tracks_failed = 0
         self._tracks_skipped = 0
+        self._on_state_change = on_state_change
+
+    def _notify_state_changed(self) -> None:
+        if self._on_state_change is None:
+            return
+        try:
+            self._on_state_change()
+        except Exception:
+            logger.exception("Failed to publish stream state change event")
 
     def start(self) -> None:
         if self._worker and self._worker.is_alive():
@@ -292,6 +302,7 @@ class StreamEngine:
         self.state.now_playing_duration_seconds = None
         self.state.started_at_epoch_seconds = None
         self.state.started_at_monotonic_seconds = None
+        self._notify_state_changed()
         try:
             process = self.ffmpeg_pipeline.spawn_silence()
         except FfmpegError as exc:
@@ -326,6 +337,7 @@ class StreamEngine:
         self.state.now_playing_duration_seconds = queue_item.duration_seconds
         self.state.started_at_epoch_seconds = time.time()
         self.state.started_at_monotonic_seconds = time.monotonic()
+        self._notify_state_changed()
         self._skip_event.clear()
         total_attempts = self.playback_retry_count + 1
         total_chunks_sent = 0
@@ -356,6 +368,7 @@ class StreamEngine:
                         self.state.now_playing_thumbnail_url = resolved.thumbnail_url
                     if resolved.channel:
                         self.state.now_playing_channel = resolved.channel
+                    self._notify_state_changed()
                     source_process = self.yt_dlp_service.spawn_audio_stream(queue_item.source_url)
                     self._set_active_processes(None, source_process)
                     process = self.ffmpeg_pipeline.spawn_for_stdin(source_process.stdout)
@@ -431,6 +444,7 @@ class StreamEngine:
                             )
                     self.repository.mark_playback_finished(queue_item.id, status=QueueStatus.completed)
                     self._record_track_outcome(completed=True)
+                    self._notify_state_changed()
                     logger.info(
                         "Track %s completed on attempt %s/%s (elapsed=%.2fs bytes=%s chunks=%s)",
                         queue_item.id,
@@ -476,6 +490,7 @@ class StreamEngine:
             )
             self.repository.mark_playback_finished(queue_item.id, status=QueueStatus.skipped)
             self._record_track_outcome(skipped=True)
+            self._notify_state_changed()
         except YtDlpError as exc:
             logger.warning(
                 "Failed resolving track %s (%s): %s",
@@ -485,6 +500,8 @@ class StreamEngine:
             )
             self.repository.mark_playback_finished(queue_item.id, status=QueueStatus.failed, error_message=str(exc))
             self._record_track_outcome(failed=True)
+            self._notify_state_changed()
+            self._notify_state_changed()
         except FfmpegError as exc:
             logger.error(
                 "ffmpeg error on track %s (%s): %s [bytes=%s chunks=%s]",
@@ -496,6 +513,8 @@ class StreamEngine:
             )
             self.repository.mark_playback_finished(queue_item.id, status=QueueStatus.failed, error_message=str(exc))
             self._record_track_outcome(failed=True)
+            self._notify_state_changed()
+            self._notify_state_changed()
         except Exception as exc:
             logger.exception(
                 "Playback failure on track %s (%s): %s",
@@ -505,3 +524,4 @@ class StreamEngine:
             )
             self.repository.mark_playback_finished(queue_item.id, status=QueueStatus.failed, error_message=str(exc))
             self._record_track_outcome(failed=True)
+            self._notify_state_changed()

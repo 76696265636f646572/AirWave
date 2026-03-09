@@ -54,6 +54,7 @@ import QueuePanel from "./components/QueuePanel.vue";
 import SidebarPlaylists from "./components/SidebarPlaylists.vue";
 import SonosPanel from "./components/SonosPanel.vue";
 import TopBar from "./components/TopBar.vue";
+import { onEventBus } from "./composables/eventBus";
 import { fetchJson } from "./composables/useApi";
 
 const queue = ref([]);
@@ -75,9 +76,8 @@ const searchResults = ref([]);
 const activePlaylistId = ref(null);
 const toast = useToast();
 
-let fastPollTimer = null;
-let regularPollTimer = null;
-let sonosPollTimer = null;
+let playbackTickTimer = null;
+let unsubscribeWsSnapshot = null;
 
 const filteredQueue = computed(() => {
   if (!searchText.value.trim()) return queue.value;
@@ -166,7 +166,6 @@ async function onAddUrl(url) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ url }),
     });
-    await refreshCore();
     notifySuccess("Added to queue", "URL added successfully.");
   } catch (error) {
     notifyError("Could not add URL", error);
@@ -180,7 +179,6 @@ async function onPlayUrl(url) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ url }),
     });
-    await refreshCore();
     notifySuccess("Playing now", "URL queued and playback started.");
   } catch (error) {
     notifyError("Could not play URL", error);
@@ -208,7 +206,6 @@ function onSearchTextChange(value) {
 async function onRemoveQueueItem(itemId) {
   try {
     await fetchJson(`/queue/${itemId}`, { method: "DELETE" });
-    await refreshCore();
     notifySuccess("Removed from queue", "Queue item deleted.");
   } catch (error) {
     notifyError("Could not remove queue item", error);
@@ -222,7 +219,6 @@ async function onReorderQueueItem({ itemId, newPosition }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ new_position: newPosition }),
     });
-    await refreshCore();
   } catch (error) {
     notifyError("Could not reorder queue", error);
   }
@@ -236,7 +232,6 @@ async function onCreatePlaylist(title) {
       body: JSON.stringify({ title }),
     });
     activePlaylistId.value = created.id;
-    await refreshCore();
     notifySuccess("Playlist created", title);
   } catch (error) {
     notifyError("Could not create playlist", error);
@@ -250,7 +245,6 @@ function onSelectPlaylist(playlistId) {
 async function onQueuePlaylist(playlistId) {
   try {
     await fetchJson(`/playlists/${playlistId}/queue`, { method: "POST" });
-    await refreshCore();
     notifySuccess("Playlist queued", "Items added to queue.");
   } catch (error) {
     notifyError("Could not queue playlist", error);
@@ -268,7 +262,6 @@ async function onSaveQueueToPlaylist(item) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ url: item.source_url }),
     });
-    await refreshCore();
     notifySuccess("Saved to playlist", "Queue item saved.");
   } catch (error) {
     notifyError("Could not save to playlist", error);
@@ -278,7 +271,6 @@ async function onSaveQueueToPlaylist(item) {
 async function onClearHistory() {
   try {
     await fetchJson("/history", { method: "DELETE" });
-    await refreshCore();
     notifySuccess("History cleared", "Playback history removed.");
   } catch (error) {
     notifyError("Could not clear history", error);
@@ -288,7 +280,6 @@ async function onClearHistory() {
 async function skipCurrent() {
   try {
     await fetchJson("/queue/skip", { method: "POST" });
-    await refreshCore();
     notifySuccess("Skipped", "Moved to the next item.");
   } catch (error) {
     notifyError("Could not skip", error);
@@ -357,18 +348,43 @@ async function setSpeakerVolume({ ip, volume }) {
   }
 }
 
+function applySnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") return;
+  if (Array.isArray(snapshot.queue)) queue.value = snapshot.queue;
+  if (Array.isArray(snapshot.history)) history.value = snapshot.history;
+  if (Array.isArray(snapshot.playlists)) playlists.value = snapshot.playlists;
+  if (snapshot.state && typeof snapshot.state === "object") playbackState.value = snapshot.state;
+}
+
+function startPlaybackTicker() {
+  if (playbackTickTimer) clearInterval(playbackTickTimer);
+  playbackTickTimer = setInterval(() => {
+    const state = playbackState.value;
+    if (!state || state.mode !== "playing" || state.started_at == null) return;
+    const startedAt = Number(state.started_at);
+    if (!Number.isFinite(startedAt)) return;
+    const elapsed = Math.max(0, Date.now() / 1000 - startedAt);
+    const duration = Number(state.duration_seconds);
+    const progress =
+      Number.isFinite(duration) && duration > 0 ? Math.min(100, (elapsed / duration) * 100) : null;
+    playbackState.value = {
+      ...state,
+      elapsed_seconds: elapsed,
+      progress_percent: progress,
+    };
+  }, 1000);
+}
+
 onMounted(async () => {
   await Promise.all([refreshCore(), refreshSonos()]);
-  fastPollTimer = setInterval(async () => {
-    playbackState.value = await fetchJson("/state");
-  }, 1000);
-  regularPollTimer = setInterval(refreshCore, 4000);
-  sonosPollTimer = setInterval(refreshSonos, 8000);
+  startPlaybackTicker();
+  unsubscribeWsSnapshot = onEventBus("ws:snapshot", (payload) => {
+    applySnapshot(payload);
+  });
 });
 
 onUnmounted(() => {
-  if (fastPollTimer) clearInterval(fastPollTimer);
-  if (regularPollTimer) clearInterval(regularPollTimer);
-  if (sonosPollTimer) clearInterval(sonosPollTimer);
+  if (playbackTickTimer) clearInterval(playbackTickTimer);
+  if (unsubscribeWsSnapshot) unsubscribeWsSnapshot();
 });
 </script>
