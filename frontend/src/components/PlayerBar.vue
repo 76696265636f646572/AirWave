@@ -1,6 +1,6 @@
 <template>
   <footer class="sticky bottom-0 z-10 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 px-2 py-2 sm:px-3 md:static">
-    <div class="grid items-center gap-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)_auto]">
+    <div class="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(340px,560px)_minmax(0,1fr)]">
       <div class="flex min-w-0 items-center gap-3">
         <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-700 bg-neutral-800">
           <img
@@ -22,8 +22,8 @@
         </div>
       </div>
 
-      <div class="min-w-0">
-        <div class="mb-2 flex items-center justify-center gap-2">
+      <div class="min-w-0 flex flex-col items-center">
+        <div class="mb-2 flex w-full items-center justify-center gap-2">
           <UButton
             type="button"
             :color="playbackState.shuffle_enabled ? 'primary' : 'neutral'"
@@ -54,7 +54,7 @@
 
         <div
           ref="progressTrackEl"
-          class="group cursor-pointer"
+          class="group w-full cursor-pointer"
           :class="{ 'pointer-events-none opacity-60': !playbackState.can_seek }"
           role="button"
           tabindex="0"
@@ -70,13 +70,13 @@
             class="w-full"
           />
         </div>
-        <div class="mt-1 flex items-center justify-between text-xs text-neutral-400">
+        <div class="mt-1 flex w-full items-center justify-between text-xs text-neutral-400">
           <span>{{ formatDuration(playbackState.elapsed_seconds) }}</span>
           <span>{{ formatDuration(playbackState.duration_seconds) }}</span>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 md:justify-end">
+      <div class="flex flex-wrap items-center gap-2 md:justify-end md:pl-4">
           <div class="flex items-center gap-2">
             <UButton
               type="button"
