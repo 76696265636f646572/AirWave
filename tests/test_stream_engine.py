@@ -1,4 +1,5 @@
 from io import BytesIO
+import queue
 from threading import Thread
 
 from app.db.models import QueueStatus
@@ -89,6 +90,25 @@ def test_shared_hub_fan_out():
     gen2.close()
 
 
+def test_shared_hub_clear_drops_buffered_audio():
+    hub = SharedMp3Hub()
+    hub._clients["client-a"] = queue.Queue()  # noqa: SLF001 - focused hub coverage
+    hub._clients["client-b"] = queue.Queue()  # noqa: SLF001 - focused hub coverage
+
+    hub.publish(b"old-a")
+    hub.publish(b"old-b")
+
+    hub.clear()
+
+    assert hub._clients["client-a"].empty() is True  # noqa: SLF001
+    assert hub._clients["client-b"].empty() is True  # noqa: SLF001
+
+    hub.publish(b"fresh")
+
+    assert hub._clients["client-a"].get_nowait() == b"fresh"  # noqa: SLF001
+    assert hub._clients["client-b"].get_nowait() == b"fresh"  # noqa: SLF001
+
+
 def test_stream_engine_playback_lifecycle(tmp_path):
     repo = Repository(f"sqlite+pysqlite:///{tmp_path}/engine.db")
     repo.init_db()
@@ -161,6 +181,27 @@ def test_pause_interrupt_is_consumed_without_lingering_skip_event(tmp_path):
     assert engine._skip_event.is_set() is True  # noqa: SLF001
     assert engine._consume_interrupt_reason() == "pause"  # noqa: SLF001
     assert engine._skip_event.is_set() is False  # noqa: SLF001
+
+
+def test_interrupt_clears_buffered_audio_for_connected_clients(tmp_path):
+    repo = Repository(f"sqlite+pysqlite:///{tmp_path}/interrupt-clear.db")
+    repo.init_db()
+    engine = StreamEngine(
+        repository=repo,
+        yt_dlp_service=FakeYtDlp(),
+        ffmpeg_pipeline=FakeFfmpeg(),
+        queue_poll_seconds=0.01,
+    )
+    client_queue: queue.Queue[bytes] = queue.Queue()
+    engine.hub._clients["listener"] = client_queue  # noqa: SLF001 - focused regression coverage
+
+    engine.hub.publish(b"stale-audio")
+
+    assert client_queue.empty() is False
+
+    engine._request_interrupt("skip")  # noqa: SLF001 - direct interrupt coverage
+
+    assert client_queue.empty() is True
 
 
 def test_paused_cycle_exits_cleanly_on_resume_interrupt(tmp_path):

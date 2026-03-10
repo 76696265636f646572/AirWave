@@ -121,8 +121,29 @@ class Repository:
             session.flush()
             return created
 
+    @staticmethod
+    def _normalize_playing_items(session: Session, *, keep_latest: bool) -> None:
+        playing_items = list(
+            session.scalars(
+                select(QueueItem)
+                .where(QueueItem.status == QueueStatus.playing)
+                .order_by(QueueItem.updated_at.desc(), QueueItem.id.desc())
+            ).all()
+        )
+        if not playing_items:
+            return
+        if keep_latest and len(playing_items) == 1:
+            return
+
+        keep_id = playing_items[0].id if keep_latest else None
+        for item in playing_items:
+            if keep_id is not None and item.id == keep_id:
+                continue
+            item.status = QueueStatus.skipped
+
     def list_queue(self) -> list[QueueItem]:
-        with self.session() as session:
+        with self._queue_lock, self.session() as session:
+            self._normalize_playing_items(session, keep_latest=True)
             stmt: Select[tuple[QueueItem]] = select(QueueItem).where(
                 QueueItem.status.in_([QueueStatus.queued, QueueStatus.playing])
             ).order_by(QueueItem.status.asc(), QueueItem.queue_position.asc())
@@ -328,6 +349,7 @@ class Repository:
 
     def dequeue_next(self) -> QueueItem | None:
         with self._queue_lock, self.session() as session:
+            self._normalize_playing_items(session, keep_latest=False)
             next_item = session.scalar(
                 select(QueueItem)
                 .where(QueueItem.status == QueueStatus.queued)

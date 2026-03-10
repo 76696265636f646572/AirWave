@@ -51,3 +51,59 @@ def test_replace_queued_items_marks_old_items_removed(tmp_path):
     removed_status = repo.get_item(first_batch[1].id)
     assert removed_status is not None
     assert removed_status.status == QueueStatus.removed
+
+
+def test_dequeue_next_demotes_previous_playing_item(tmp_path):
+    db_url = f"sqlite+pysqlite:///{tmp_path}/repo_single_playing.db"
+    repo = Repository(db_url)
+    repo.init_db()
+
+    created = repo.enqueue_items(
+        [
+            NewQueueItem(source_url="u1", normalized_url="u1", source_type="video", title="a"),
+            NewQueueItem(source_url="u2", normalized_url="u2", source_type="video", title="b"),
+        ]
+    )
+
+    first_item = repo.dequeue_next()
+    assert first_item is not None
+    assert first_item.id == created[0].id
+
+    second_item = repo.dequeue_next()
+    assert second_item is not None
+    assert second_item.id == created[1].id
+    assert second_item.status == QueueStatus.playing
+
+    refreshed_first = repo.get_item(created[0].id)
+    assert refreshed_first is not None
+    assert refreshed_first.status == QueueStatus.skipped
+
+
+def test_list_queue_repairs_multiple_playing_rows(tmp_path):
+    db_url = f"sqlite+pysqlite:///{tmp_path}/repo_repair_playing.db"
+    repo = Repository(db_url)
+    repo.init_db()
+
+    created = repo.enqueue_items(
+        [
+            NewQueueItem(source_url="u1", normalized_url="u1", source_type="video", title="a"),
+            NewQueueItem(source_url="u2", normalized_url="u2", source_type="video", title="b"),
+            NewQueueItem(source_url="u3", normalized_url="u3", source_type="video", title="c"),
+        ]
+    )
+
+    repo.dequeue_next()
+    with repo.session() as session:
+        second = session.get(type(created[1]), created[1].id)
+        assert second is not None
+        second.status = QueueStatus.playing
+
+    queue = repo.list_queue()
+
+    playing_items = [item for item in queue if item.status == QueueStatus.playing]
+    assert len(playing_items) == 1
+    assert playing_items[0].id == created[1].id
+
+    refreshed_first = repo.get_item(created[0].id)
+    assert refreshed_first is not None
+    assert refreshed_first.status == QueueStatus.skipped

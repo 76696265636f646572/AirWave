@@ -94,6 +94,16 @@ class SharedMp3Hub:
                 except queue.Full:
                     continue
 
+    def clear(self) -> None:
+        with self._lock:
+            clients = list(self._clients.values())
+        for q in clients:
+            while True:
+                try:
+                    q.get_nowait()
+                except queue.Empty:
+                    break
+
     def subscriber_count(self) -> int:
         with self._lock:
             return len(self._clients)
@@ -404,6 +414,10 @@ class StreamEngine:
         with self._control_lock:
             self._control_reason = reason
             self._skip_event.set()
+        # This is a shared live stream, so control changes should drop any
+        # already-buffered audio from the previous playback position/source.
+        if terminate:
+            self.hub.clear()
         if terminate:
             self._terminate_active_process()
 

@@ -211,11 +211,17 @@ export function useLibraryState() {
 
   async function setShuffleEnabled(enabled) {
     try {
-      await fetchJson("/api/playback/shuffle", {
+      const result = await fetchJson("/api/playback/shuffle", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ enabled }),
       });
+      const { playbackState, applyPlaybackState } = usePlaybackState();
+      applyPlaybackState({
+        ...playbackState.value,
+        shuffle_enabled: !!result?.enabled,
+      });
+      await refreshCore();
     } catch (error) {
       notifyError("Could not change shuffle", error);
     }
