@@ -541,7 +541,10 @@ def test_multi_site_search_endpoint_includes_warnings(tmp_path):
     client, app = _build_test_client(tmp_path)
     with client:
         app.state.source_resolver = FakeSourceResolver(fail_site="soundcloud")
-        response = client.get("/api/search?q=jazz&sites=youtube,soundcloud&limit=5")
+        response = client.post(
+            "/api/search",
+            json={"q": "jazz", "sites": "youtube,soundcloud", "limit": 5},
+        )
         assert response.status_code == 200
         payload = response.json()
         assert payload["query"] == "jazz"

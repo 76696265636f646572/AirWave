@@ -23,18 +23,18 @@
       <p class="mt-1 text-xs text-muted">Choose which sites are used for multi-site search.</p>
       <div v-if="loadingSites" class="mt-3 text-sm text-muted">Loading search sources...</div>
       <div v-else class="mt-3 space-y-2">
-        <label
-          v-for="site in availableSites"
-          :key="site"
-          class="flex items-center justify-between rounded-md border border-neutral-700 px-3 py-2"
-        >
-          <span class="text-sm">{{ siteLabel(site) }}</span>
-          <input
-            type="checkbox"
-            :checked="enabledSites.includes(site)"
-            @change="onToggleSite(site, $event.target.checked)"
-          />
-        </label>
+        <!-- 2 columns -->
+        <div class="grid grid-cols-2 gap-2">
+          <label
+            v-for="site in availableSites"
+            :key="site"
+            class="flex items-center justify-between cursor-pointer rounded-md border border-neutral-700 px-3 py-2"
+            :class="enabledSites.includes(site) ? 'border-primary-500 text-primary-300' : 'border-neutral-700 text-muted'"
+            @click="onToggleSite(site, !enabledSites.includes(site))"
+          >
+            <span class="text-sm">{{ siteLabel(site) }}</span>
+          </label>
+        </div>
       </div>
     </div>
   </section>

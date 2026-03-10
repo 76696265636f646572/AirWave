@@ -86,6 +86,12 @@ class AddPlaylistEntryRequest(AddUrlRequest):
     title: str | None = Field(default=None, min_length=1, max_length=200)
 
 
+class SearchRequest(BaseModel):
+    q: str = Field(min_length=1)
+    sites: str | None = None
+    limit: int = Field(default=10, ge=1, le=25)
+
+
 def _services(request: Request) -> dict[str, Any]:
     return {
         "repo": request.app.state.repository,
@@ -502,12 +508,11 @@ def _search_sites_param(raw_sites: str | None) -> list[str]:
     return [site.strip().lower() for site in raw_sites.split(",") if site.strip()]
 
 
-@api_router.get("/search")
-def search_multi_site(
+def _search_multi_site_impl(
     request: Request,
-    q: str = Query(min_length=1),
-    sites: str | None = Query(default=None),
-    limit: int = Query(default=10, ge=1, le=25),
+    q: str,
+    sites: str | None,
+    limit: int,
 ) -> dict[str, Any]:
     services = _services(request)
     resolver = services["resolver"]
@@ -551,6 +556,11 @@ def search_multi_site(
     }
 
 
+@api_router.post("/search")
+def search_multi_site(payload: SearchRequest, request: Request) -> dict[str, Any]:
+    return _search_multi_site_impl(request, payload.q, payload.sites, payload.limit)
+
+
 @api_router.get("/search/sites")
 def search_sites(request: Request) -> dict[str, Any]:
     resolver = _services(request)["resolver"]
@@ -563,7 +573,7 @@ def search_youtube(
     q: str = Query(min_length=1),
     limit: int = Query(default=10, ge=1, le=25),
 ) -> dict[str, Any]:
-    return search_multi_site(request=request, q=q, sites="youtube", limit=limit)
+    return _search_multi_site_impl(request, q, "youtube", limit)
 
 
 @root_router.get("/stream/live.mp3")

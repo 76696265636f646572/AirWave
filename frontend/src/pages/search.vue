@@ -141,9 +141,15 @@ async function searchAllSites(rawQuery) {
 
   try {
     const sites = enabledSitesParam();
-    const payload = await fetchJson(
-      `/api/search?q=${encodeURIComponent(normalized)}&limit=10&sites=${encodeURIComponent(sites)}`
-    );
+    const payload = await fetchJson("/api/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: normalized,
+        limit: 10,
+        sites,
+      }),
+    });
     if (activeRequestId !== requestId) return;
     
     results.value = Array.isArray(payload?.results) ? payload.results : [];
