@@ -129,8 +129,9 @@ const { notifySuccess, notifyError } = useNotifications();
 const thumbnailSrc = computed(() => {
   const item = props.item;
   if (item?.thumbnail_url) return item.thumbnail_url;
-  const videoId = item?.video_id ?? item?.id;
-  if (videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  const site = (item?.source_site || "").toString().toLowerCase();
+  const videoId = item?.video_id ?? (site === "youtube" ? item?.id : null);
+  if (site === "youtube" && videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
   return "/static/placeholder-audio.svg";
 });
 
