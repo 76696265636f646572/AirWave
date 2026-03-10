@@ -1,6 +1,11 @@
 # MyTube Radio
 
-A WSL-friendly FastAPI application that exposes one shared live MP3 stream for all connected clients. Users can queue individual YouTube URLs or playlist URLs into a shared queue.
+A WSL-friendly FastAPI application that exposes one shared live MP3 stream for all connected clients. Users can queue individual video/playlist URLs from many sites, or direct audio/live stream URLs, into a shared queue.
+
+## Supported sites
+
+- **yt-dlp sites** — Queue and search work with any site [yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) (e.g. YouTube, SoundCloud, Vimeo). Which sites are searchable is configurable; YouTube and SoundCloud are enabled for search by default. You can restrict or block specific domains or extractors via environment variables.
+- **Direct URLs** — Direct audio files (e.g. `.mp3`, `.m4a`, `.ogg`) and live stream URLs (e.g. Shoutcast, Icecast, HLS `.m3u8`) that `ffmpeg` can open are supported without yt-dlp. Paste the URL into the queue or add it to a playlist.
 
 ## Quick Start
 
@@ -50,8 +55,13 @@ MYTUBE_YT_DLP_PATH=./bin/yt-dlp
 | `MYTUBE_PORT` | `8000` | Port used by `scripts/run_dev.sh` and as the fallback port for stream URL generation. |
 | `MYTUBE_PUBLIC_BASE_URL` | `http://127.0.0.1:8000` | Base URL used to build the public stream URL exposed to browsers and Sonos devices. |
 | `MYTUBE_STREAM_PATH` | `/stream/live.mp3` | Path appended to the public base URL for the shared MP3 stream endpoint. |
-| `MYTUBE_YT_DLP_PATH` | `./bin/yt-dlp` | Path to the `yt-dlp` binary used for YouTube resolution and search. Also used by `scripts/setup_yt_dlp.sh` as its install target. |
+| `MYTUBE_YT_DLP_PATH` | `./bin/yt-dlp` | Path to the `yt-dlp` binary used for multi-site resolution and search. Also used by `scripts/setup_yt_dlp.sh` as its install target. |
 | `MYTUBE_FFMPEG_PATH` | `ffmpeg` | Path or executable name for `ffmpeg`. Also used by `scripts/setup_ffmpeg.sh` as its install target. |
+| `MYTUBE_BLOCKED_DOMAINS` | *(empty)* | Comma-separated list of domains to block for queue/playlist (e.g. `example.com`). |
+| `MYTUBE_BLOCKED_EXTRACTORS` | *(empty)* | Comma-separated list of yt-dlp extractor names to block. |
+| `MYTUBE_SEARCHABLE_SITES` | `youtube,soundcloud,vimeo` | Comma-separated list of site keys that are allowed for multi-site search. |
+| `MYTUBE_DEFAULT_ENABLED_SEARCH_SITES` | `youtube,soundcloud` | Comma-separated list of sites enabled for search by default in the UI. |
+| `MYTUBE_SEARCH_SITE_TIMEOUT_SECONDS` | `4.0` | Per-site timeout (seconds) for parallel search requests. |
 | `MYTUBE_MP3_BITRATE` | `128k` | MP3 bitrate passed into the ffmpeg transcoding pipeline. |
 | `MYTUBE_CHUNK_SIZE` | `2048` | Stream chunk size used when the shared MP3 output is read and distributed to listeners. |
 | `MYTUBE_QUEUE_POLL_SECONDS` | `1.0` | How often the stream engine checks for queued items when idle. |
@@ -97,20 +107,20 @@ flowchart TD
     ROUTES --> PLAYLIST[PlaylistService<br/>playlist import / queueing]
     ROUTES --> ENGINE[StreamEngine<br/>shared live playback worker]
     ROUTES --> SONOS[SonosService<br/>speaker discovery / control]
-    ROUTES --> YTDLP[YtDlpService<br/>YouTube metadata / URLs]
+    ROUTES --> RESOLVER[Source resolver<br/>yt-dlp + direct URL resolution]
     ROUTES --> REPO[Repository<br/>SQLite access layer]
     ROUTES --> SETTINGS[Settings<br/>env + stream URL resolution]
 
-    PLAYLIST --> YTDLP
+    PLAYLIST --> RESOLVER
     PLAYLIST --> REPO
     ENGINE --> REPO
-    ENGINE --> YTDLP
+    ENGINE --> RESOLVER
     ENGINE --> FFMPEG[FfmpegPipeline<br/>transcodes to shared MP3]
     API --> FSETUP[ffmpeg_setup<br/>resolve/download ffmpeg]
     FSETUP --> FFMPEG
 
     REPO --> DB[(SQLite<br/>data/mytube.db)]
-    YTDLP --> YTB[YouTube / playlists]
+    RESOLVER --> YTB[yt-dlp sites / direct URLs]
     FFMPEG --> HUB[SharedMp3Hub<br/>fan-out buffer]
     STREAM --> HUB
     HUB --> LISTENERS[All connected listeners<br/>same live MP3 stream]
@@ -135,7 +145,8 @@ mytube/
 │   │   ├── stream_engine.py       # Background playback loop + shared MP3 publish/subscribe hub
 │   │   ├── ffmpeg_pipeline.py     # Launches ffmpeg to convert source media into MP3 chunks
 │   │   ├── ffmpeg_setup.py        # Ensures ffmpeg is available, including fallback install path
-│   │   ├── yt_dlp_service.py      # Resolves videos/playlists and performs YouTube search
+│   │   ├── source_resolver.py      # Composite resolver (yt-dlp + direct URLs) and search
+│   │   ├── yt_dlp_service.py      # Compatibility shim; see resolver/ for yt-dlp implementation
 │   │   ├── playlist_service.py    # Playlist preview/import and queue construction helpers
 │   │   └── sonos_service.py       # Sonos discovery, grouping, playback, volume control
 │   ├── templates/
@@ -169,9 +180,9 @@ mytube/
 
 ### How The Pieces Fit Together
 
-1. `uvicorn app.main:create_app --factory` starts the FastAPI app and builds shared singletons for the repository, stream engine, playlist service, Sonos service, yt-dlp service, and ffmpeg pipeline.
-2. The Vue frontend calls JSON endpoints in `app/api/routes.py` for queue management, playlist browsing/import, player state, YouTube search, and Sonos control.
-3. `PlaylistService` turns a pasted YouTube URL into either one queue item or many playlist-backed queue items, storing metadata in SQLite through `Repository`.
-4. `StreamEngine` runs in the background, polls the queue, resolves metadata with `YtDlpService`, streams source audio bytes from `yt-dlp`, pipes them through `FfmpegPipeline`, and publishes MP3 chunks to every connected listener.
+1. `uvicorn app.main:create_app --factory` starts the FastAPI app and builds shared singletons for the repository, stream engine, playlist service, Sonos service, source resolver (yt-dlp + direct URLs), and ffmpeg pipeline.
+2. The Vue frontend calls JSON endpoints in `app/api/routes.py` for queue management, playlist browsing/import, player state, multi-site search, and Sonos control.
+3. `PlaylistService` turns a pasted URL (from any supported site or a direct audio/live stream URL) into either one queue item or many playlist-backed queue items, storing metadata in SQLite through `Repository`.
+4. `StreamEngine` runs in the background, polls the queue, resolves metadata with the composite source resolver (yt-dlp or direct URL), streams source audio, pipes it through `FfmpegPipeline`, and publishes MP3 chunks to every connected listener.
 5. `/stream/live.mp3` does not create a separate stream per client; each subscriber receives the same shared live MP3 feed from `SharedMp3Hub`.
 6. Sonos endpoints use the same shared stream URL, so browser clients and Sonos speakers consume the same live output.
