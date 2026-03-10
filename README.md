@@ -32,7 +32,6 @@ MYTUBE_PORT=8000
 MYTUBE_PUBLIC_BASE_URL=http://192.168.1.50:8000
 MYTUBE_FFMPEG_PATH=./bin/ffmpeg
 MYTUBE_YT_DLP_PATH=./bin/yt-dlp
-HOST_IP=192.168.1.50
 ```
 
 ### App Settings
@@ -53,19 +52,12 @@ HOST_IP=192.168.1.50
 | `MYTUBE_STREAM_STATS_LOG_SECONDS` | `15.0` | Interval for periodic stream-engine runtime stats logging. |
 | `MYTUBE_HISTORY_LIMIT` | `50` | Maximum number of playback history rows returned by `/history`. |
 
-### Special-Case Variable
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `HOST_IP` | unset | Fallback IP used when `MYTUBE_PUBLIC_BASE_URL` resolves to a non-routable or local-only host and the app needs a reachable stream URL for Sonos or other LAN clients. |
-
 ### Notes
 
-1. `MYTUBE_PUBLIC_BASE_URL` is the most important variable when clients outside the local browser need to reach the stream.
+1. `MYTUBE_PUBLIC_BASE_URL` is the variable used to build the public stream URL for browsers and Sonos; set it to your host or IP (e.g. `http://192.168.1.50:8000`) when clients outside the local browser need to reach the stream.
 2. If `MYTUBE_PUBLIC_BASE_URL` points at `localhost`, `0.0.0.0`, `host.docker.internal`, or another non-reachable host, the app tries to detect a LAN IP automatically.
-3. If automatic detection is not suitable, set `HOST_IP` to the machine IP you want embedded in the generated stream URL.
-4. `MYTUBE_FFMPEG_PATH` can be either a binary name on `PATH` or an explicit file path such as `./bin/ffmpeg`.
-5. `MYTUBE_YT_DLP_PATH` and `MYTUBE_FFMPEG_PATH` are the only variables used both by the app and by the install helper scripts.
+3. `MYTUBE_FFMPEG_PATH` can be either a binary name on `PATH` or an explicit file path such as `./bin/ffmpeg`.
+4. `MYTUBE_YT_DLP_PATH` and `MYTUBE_FFMPEG_PATH` are the only variables used both by the app and by the install helper scripts.
 
 ## Running Tests
 
@@ -79,7 +71,7 @@ HOST_IP=192.168.1.50
 
 If `ffmpeg` is missing, the app will try to auto-download a Linux binary from GitHub to `./bin/ffmpeg` at startup.
 
-If the app is running in Docker or otherwise resolves to a non-routable local address for Sonos clients, set `HOST_IP` to the machine IP you want the shared stream URL to use.
+If the app is running in Docker or otherwise resolves to a non-routable local address for Sonos clients, set `MYTUBE_PUBLIC_BASE_URL` to the full base URL (e.g. `http://192.168.1.50:8000`) you want the shared stream URL to use.
 
 ## Upgrading / database migrations
 

@@ -17,7 +17,6 @@ services:
     # Optional env (uncomment as needed):
     # environment:
     #   MYTUBE_PUBLIC_BASE_URL: "http://your-host-or-ip:8000"
-    #   HOST_IP: "192.168.1.100"
     #   MYTUBE_DB_URL: "sqlite+pysqlite:///./data/mytube.db"
     # volumes:
     #   - ./data:/app/data

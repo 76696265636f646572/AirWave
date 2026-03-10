@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ipaddress
-import os
 import socket
 from functools import lru_cache
 from urllib.parse import urlsplit, urlunsplit
@@ -95,13 +94,10 @@ class Settings(BaseSettings):
             return configured
 
         detected_host = _detect_local_ip()
-        env_host = _extract_host(os.getenv("HOST_IP"))
         request_host = _extract_host(request_base_url)
 
         if detected_host and not _is_docker_address(detected_host):
             resolved_host = detected_host
-        elif env_host:
-            resolved_host = env_host
         elif _is_reachable_host(request_host):
             resolved_host = request_host
         else:
