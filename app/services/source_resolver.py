@@ -6,13 +6,11 @@ from typing import Any
 
 from app.services.resolver.base import PlaylistPreview, ResolvedTrack, SourceResolver
 from app.services.resolver.direct_resolver import DirectUrlResolver
-from app.services.resolver.yt_dlp_resolver import YtDlpResolver
+from app.services.resolver.yt_dlp_resolver import SEARCH_PREFIXES, YtDlpResolver
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SEARCHABLE_SITES = [
-    "youtube", "soundcloud", 
-]
+DEFAULT_SEARCHABLE_SITES = list(SEARCH_PREFIXES.keys())
 
 
 class CompositeSourceResolver(SourceResolver):
