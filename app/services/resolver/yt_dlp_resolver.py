@@ -194,6 +194,19 @@ class YtDlpResolver(SourceResolver):
             return f"https://www.youtube.com/watch?v={video_id}"
         return None
 
+    @staticmethod
+    def _duration_seconds(value: Any) -> int | None:
+        if value is None or isinstance(value, bool):
+            return None
+        if isinstance(value, (int, float)):
+            return max(0, int(value))
+        if isinstance(value, str):
+            try:
+                return max(0, int(float(value.strip())))
+            except ValueError:
+                return None
+        return None
+
     def is_playlist_url(self, url: str) -> bool:
         normalized = self.normalize_url(url)
         self._ensure_domain_allowed(normalized)
@@ -245,9 +258,7 @@ class YtDlpResolver(SourceResolver):
         if not direct_url:
             raise YtDlpError("Could not resolve direct stream URL")
         is_live = bool(data.get("is_live")) or str(data.get("live_status") or "").lower() in {"is_live", "post_live"}
-        duration = data.get("duration")
-        if not isinstance(duration, int):
-            duration = None
+        duration = self._duration_seconds(data.get("duration"))
         return ResolvedTrack(
             source_url=url,
             normalized_url=normalized,
@@ -272,9 +283,7 @@ class YtDlpResolver(SourceResolver):
             source_url = self._extract_entry_url(entry)
             if not source_url:
                 continue
-            duration = entry.get("duration")
-            if not isinstance(duration, int):
-                duration = None
+            duration = self._duration_seconds(entry.get("duration"))
             entries.append(
                 {
                     "source_url": source_url,
@@ -307,9 +316,7 @@ class YtDlpResolver(SourceResolver):
             source_url = self._extract_entry_url(entry)
             if not source_url:
                 continue
-            duration = entry.get("duration")
-            if not isinstance(duration, int):
-                duration = None
+            duration = self._duration_seconds(entry.get("duration"))
             results.append(
                 {
                     "id": entry.get("id") or source_url,

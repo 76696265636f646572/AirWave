@@ -139,9 +139,9 @@ const sourceSiteLabel = computed(() => props.item?.source_site || "");
 const isLive = computed(() => Boolean(props.item?.is_live));
 
 const showSecondary = computed(
-  () => props.mode === "queue" || props.mode === "history" || (props.mode === "search" && props.item?.channel),
+  () => props.mode === "queue" || props.mode === "history" || props.mode === "search",
 );
-const showDuration = computed(() => props.mode === "search");
+const showDuration = computed(() => props.item?.duration_seconds != null);
 
 const filteredPlaylists = computed(() => {
   const term = playlistSearchTerm.value.toLowerCase().trim();

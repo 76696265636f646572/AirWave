@@ -48,3 +48,9 @@ def test_composite_resolver_empty_default_enabled_returns_no_sites():
     assert payload["sites"] == ["youtube", "soundcloud", "vimeo"]
     assert payload["default_enabled_sites"] == []
 
+
+def test_yt_dlp_resolver_coerces_float_duration_seconds():
+    assert YtDlpResolver._duration_seconds(242.0) == 242
+    assert YtDlpResolver._duration_seconds("340.9") == 340
+    assert YtDlpResolver._duration_seconds(None) is None
+
