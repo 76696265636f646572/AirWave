@@ -129,26 +129,3 @@ export function useUiState() {
     selectPlaylist,
   };
 }
-
-export function useQueueHistoryFilters(queue, history) {
-  const filteredQueue = computed(() => {
-    if (!searchText.value.trim()) return queue.value;
-    const needle = searchText.value.toLowerCase();
-    return queue.value.filter((item) => {
-      const haystack = `${item.title || ""} ${item.source_url || ""} ${item.channel || ""}`.toLowerCase();
-      return haystack.includes(needle);
-    });
-  });
-
-  const filteredHistory = computed(() => {
-    if (!searchText.value.trim()) return history.value;
-    const needle = searchText.value.toLowerCase();
-    return history.value.filter((item) => {
-      const haystack = `${item.title || ""} ${item.source_url || ""} ${item.status || ""}`.toLowerCase();
-      return haystack.includes(needle);
-    });
-  });
-
-  return { filteredQueue, filteredHistory };
-}
-

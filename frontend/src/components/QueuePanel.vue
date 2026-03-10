@@ -7,7 +7,7 @@
         color="error"
         variant="soft"
         size="xs"
-        :disabled="!filteredQueue.length"
+        :disabled="!queue.length"
         class="shrink-0"
         @click="clearQueue"
       >
@@ -15,7 +15,7 @@
       </UButton>
     </div>
     <ul class="mt-3 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
-      <li v-for="item in filteredQueue" :key="item.id">
+      <li v-for="item in queue" :key="item.id">
         <Song
           :item="item"
           mode="queue"
@@ -28,9 +28,7 @@
 
 <script setup>
 import { useLibraryState } from "../composables/useLibraryState";
-import { useQueueHistoryFilters } from "../composables/useUiState";
 import Song from "./Song.vue";
 
-const { queue, history, playlists, clearQueue } = useLibraryState();
-const { filteredQueue } = useQueueHistoryFilters(queue, history);
+const { queue, playlists, clearQueue } = useLibraryState();
 </script>
