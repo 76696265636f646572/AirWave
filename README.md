@@ -22,6 +22,12 @@ A WSL-friendly FastAPI application that exposes one shared live MP3 stream for a
 
 Open `http://127.0.0.1:8000`.
 
+## Docker
+
+The included `docker-compose.yml` uses `network_mode: host` on Linux so Sonos discovery can receive the SSDP multicast traffic that Sonos speakers use on the LAN. The default Docker bridge network is often enough for the web UI, but not for Sonos discovery.
+
+When running in Docker for Sonos playback, also set `MYTUBE_PUBLIC_BASE_URL` to a LAN-reachable URL such as `http://192.168.1.50:8000` so speakers can fetch the shared stream.
+
 ## Environment Variables
 
 The app reads `MYTUBE_*` variables from the environment or a local `.env` file. Example:
@@ -71,7 +77,7 @@ MYTUBE_YT_DLP_PATH=./bin/yt-dlp
 
 If `ffmpeg` is missing, the app will try to auto-download a Linux binary from GitHub to `./bin/ffmpeg` at startup.
 
-If the app is running in Docker or otherwise resolves to a non-routable local address for Sonos clients, set `MYTUBE_PUBLIC_BASE_URL` to the full base URL (e.g. `http://192.168.1.50:8000`) you want the shared stream URL to use.
+If the app is running in Docker or otherwise resolves to a non-routable local address for Sonos clients, set `MYTUBE_PUBLIC_BASE_URL` to the full base URL (e.g. `http://192.168.1.50:8000`) you want the shared stream URL to use. On Linux Docker hosts, Sonos discovery also requires host networking because the default bridge network does not reliably expose SSDP multicast traffic to the container.
 
 
 ## App Structure

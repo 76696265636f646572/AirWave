@@ -9,13 +9,18 @@ services:
     image: ghcr.io/76696265636f646572/mytube:latest
     container_name: mytube
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    # Sonos discovery relies on SSDP multicast, which does not reach the default
+    # Docker bridge network reliably. Host networking allows SoCo discovery to
+    # see speakers on the LAN.
+    #
+    # This is intended for Linux Docker hosts. With host networking the app is
+    # still available on http://localhost:8000 and the `ports` section is not used.
+    network_mode: host
     volumes:
       - ./data:/app/data
     # Optional env (uncomment as needed):
     # environment:
-    #   MYTUBE_PUBLIC_BASE_URL: "http://your-host-or-ip:8000"
+    #   MYTUBE_PUBLIC_BASE_URL: "http://192.168.1.50:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
