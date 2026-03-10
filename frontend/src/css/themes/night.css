@@ -1,0 +1,74 @@
+[data-theme="night"] {
+  --app-body-bg: #0b1020;
+  --app-body-gradient: radial-gradient(circle at 14% -10%, rgba(52, 211, 153, 0.2) 0%, rgba(52, 211, 153, 0) 34%),
+    radial-gradient(circle at 85% -5%, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 38%),
+    linear-gradient(180deg, #111827 0%, #0b1020 65%);
+  --app-surface: #111218;
+  --app-surface-elevated: #171922;
+  --app-border: #334155;
+  --app-text: #f3f4f6;
+  --app-text-muted: #94a3b8;
+
+  --ui-color-primary-50: #ecfdf5;
+  --ui-color-primary-100: #d1fae5;
+  --ui-color-primary-200: #a7f3d0;
+  --ui-color-primary-300: #6ee7b7;
+  --ui-color-primary-400: #34d399;
+  --ui-color-primary-500: #10b981;
+  --ui-color-primary-600: #059669;
+  --ui-color-primary-700: #047857;
+  --ui-color-primary-800: #065f46;
+  --ui-color-primary-900: #064e3b;
+  --ui-color-primary-950: #022c22;
+  --ui-color-neutral-50: #f8fafc;
+  --ui-color-neutral-100: #f1f5f9;
+  --ui-color-neutral-200: #e2e8f0;
+  --ui-color-neutral-300: #cbd5e1;
+  --ui-color-neutral-400: #94a3b8;
+  --ui-color-neutral-500: #64748b;
+  --ui-color-neutral-600: #475569;
+  --ui-color-neutral-700: #334155;
+  --ui-color-neutral-800: #1e293b;
+  --ui-color-neutral-900: #0f172a;
+  --ui-color-neutral-950: #020617;
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-bg: #0b1020;
+  --ui-bg-muted: #111827;
+  --ui-bg-elevated: #1a2438;
+  --ui-bg-accented: #24324f;
+  --ui-bg-inverted: #f8fafc;
+  --ui-border: #334155;
+  --ui-border-muted: #273449;
+  --ui-border-accented: #475569;
+  --ui-border-inverted: #f8fafc;
+  --ui-text: #f3f4f6;
+  --ui-text-muted: #94a3b8;
+  --ui-text-dimmed: #64748b;
+  --ui-text-toned: #dbe4ef;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #0f172a;
+
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-neutral-950: #020617;
+
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b;
+  --color-primary-950: #022c22;
+}

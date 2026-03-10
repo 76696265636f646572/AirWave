@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "./themes/night.css";
+@import "./themes/dark.css";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--app-body-bg);
+  background-image: var(--app-body-gradient);
+  background-attachment: fixed;
+  color: var(--app-text);
+}
+
+.app-shell {
+  background-color: var(--app-body-bg);
+  background-image: var(--app-body-gradient);
+  background-size: cover;
+}
+
+.surface-panel {
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+.surface-elevated {
+  background-color: var(--app-surface-elevated);
+  border-color: var(--app-border);
+}
+
+.text-muted {
+  color: var(--app-text-muted);
+}
+
+.surface-input {
+  background-color: var(--app-surface-elevated);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+.surface-input::placeholder {
+  color: var(--app-text-muted);
+}
+
+.playlist-card {
+  border-color: var(--app-border);
+}

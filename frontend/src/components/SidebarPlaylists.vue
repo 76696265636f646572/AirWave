@@ -1,5 +1,5 @@
 <template>
-  <aside class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3 flex flex-col">
+  <aside class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 p-3 flex flex-col surface-panel">
     <h2 class="text-2xl font-bold">Playlists</h2>
     <form class="mt-3 flex gap-2" @submit.prevent="submitCreatePlaylist">
       <input
@@ -7,7 +7,7 @@
         type="text"
         placeholder="New playlist"
         required
-        class="h-10 min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm"
+        class="h-10 min-w-0 flex-1 rounded-md border px-3 text-sm surface-input"
       />
       <UButton type="submit" color="primary" variant="solid" size="md">
         Create
@@ -21,7 +21,7 @@
       <li
         v-for="playlist in playlists"
         :key="playlist.id"
-        class="group flex items-start gap-2 rounded-md border border-neutral-700 p-2 cursor-pointer transition-colors"
+        class="group flex items-start gap-2 rounded-md border p-2 cursor-pointer transition-colors playlist-card"
         :class="playlist.id === activePlaylistId ? 'bg-primary-500/20' : 'hover:bg-neutral-700/50'"
         @click="togglePlaylistSelection(playlist.id)"
       >
@@ -37,7 +37,7 @@
           />
           <div class="min-w-0 text-left">
             <span class="block truncate text-sm font-medium">{{ playlist.title }}</span>
-            <span class="block text-xs text-neutral-400">{{ playlist.kind }} · {{ playlist.entry_count }}</span>
+            <span class="block text-xs text-muted">{{ playlist.kind }} · {{ playlist.entry_count }}</span>
           </div>
         </div>
         <div v-if="activePlaylistId === playlist.id" class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" @click.stop>
@@ -62,7 +62,7 @@
           <input
             v-model="renameTitle"
             type="text"
-            class="mt-3 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm"
+            class="mt-3 w-full rounded-md border px-3 py-2 text-sm surface-input"
             placeholder="Playlist name"
             @keydown.enter.prevent="submitRename"
           />
@@ -82,7 +82,7 @@
       <template #content>
         <div class="p-4">
           <h3 class="text-lg font-semibold">Delete playlist</h3>
-          <p class="mt-2 text-sm text-neutral-400">
+          <p class="mt-2 text-sm text-muted">
             Delete "{{ playlistToDelete ? (playlistToDelete.title || 'Untitled playlist') : '' }}"?
             This cannot be undone.
           </p>

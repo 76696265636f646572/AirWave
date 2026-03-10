@@ -1,16 +1,16 @@
 <template>
-  <section class="min-h-0 h-full rounded-xl border border-neutral-700 bg-neutral-900 p-6 overflow-auto">
-    <div v-if="loading" class="text-sm text-neutral-300">Loading playlist...</div>
+  <section class="min-h-0 h-full rounded-xl border border-neutral-700 p-6 overflow-auto surface-panel">
+    <div v-if="loading" class="text-sm text-muted">Loading playlist...</div>
     <div v-else-if="notFound" class="text-sm text-red-300">Playlist not found.</div>
     <div v-else-if="errorMessage" class="text-sm text-red-300">{{ errorMessage }}</div>
 
     <template v-else>
       <h2 class="text-2xl font-bold">{{ playlist.title || "Untitled playlist" }}</h2>
-      <p class="mt-1 text-sm text-neutral-400">
+      <p class="mt-1 text-sm text-muted">
         {{ playlist.channel || "Unknown channel" }} · {{ playlist.entry_count || 0 }} items
       </p>
 
-      <div v-if="!entries.length" class="mt-4 text-sm text-neutral-300">This playlist has no entries yet.</div>
+      <div v-if="!entries.length" class="mt-4 text-sm text-muted">This playlist has no entries yet.</div>
 
       <ul v-else class="mt-4 space-y-2">
         <li v-for="entry in entries" :key="entry.id">

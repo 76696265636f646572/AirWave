@@ -1,6 +1,6 @@
 <template>
   <UApp :toaster="{ position: 'bottom-right' }">
-    <div class="h-dvh overflow-hidden bg-neutral-950 p-3 text-neutral-100 flex flex-col gap-3">
+    <div class="app-shell h-dvh overflow-hidden p-3 text-neutral-100 flex flex-col gap-3">
       <TopBar />
 
       <div class="min-h-0 flex-1 grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
@@ -58,12 +58,14 @@ import {
   SIDEBAR_QUEUE_VIEW,
   useUiState,
 } from "./composables/useUiState";
+import { initializeTheme } from "./composables/useTheme";
 
 const route = useRoute();
 const { sidebarView, activeQueueTab, queueSidebarTabs, initializeUiState } = useUiState();
 initializeNotifications(useToast());
 
 onMounted(async () => {
+  initializeTheme();
   initializeUiState(route);
   await Promise.allSettled([initializeLibraryState(), initializePlaybackState(), initializeSonosState()]);
 });

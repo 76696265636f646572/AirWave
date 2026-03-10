@@ -1,13 +1,29 @@
 <template>
-  <header class="rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+  <header class="rounded-xl border border-neutral-700 p-3 surface-panel">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
       <h1 class="text-2xl font-bold leading-tight">MyTube Radio</h1>
       <div class="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-house"
+          class="self-start sm:self-auto"
+          @click="router.push('/')"
+        />
+        <UButton
+          type="button"
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-settings"
+          class="self-start sm:self-auto"
+          @click="router.push('/settings')"
+        />
         <input
           :value="searchText"
           type="search"
           placeholder="Search local + YouTube"
-          class="h-10 w-full min-w-0 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm sm:w-[320px]"
+          class="h-10 w-full min-w-0 rounded-md border px-3 text-sm sm:w-[320px] surface-input"
           @input="onSearchTextChange($event.target.value)"
           @keydown.enter.prevent="onYoutubeSearch(router, route, searchText)"
         />
@@ -30,7 +46,7 @@
         type="url"
         placeholder="https://www.youtube.com/watch?v=... or https://www.youtube.com/playlist?list=..."
         required
-        class="h-10 w-full min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm"
+        class="h-10 w-full min-w-0 flex-1 rounded-md border px-3 text-sm surface-input"
       />
       <div class="flex w-full gap-2 sm:w-auto">
         <template v-if="isPlaylistUrl">

@@ -110,6 +110,26 @@ If you change Vue files, composables, or router behavior, run `npm run build` so
 - When adding UI that depends on backend payloads, verify the shape against the API response instead of assuming fields.
 - Use in-app modals (e.g. `UModal`) for confirmations and editing flows. Do not use browser `confirm()`, `alert()`, or `prompt()` so that UX stays consistent with the rest of the app.
 
+### Frontend Theme System
+
+- Theme styles live under `frontend/src/css/`:
+  - Shared/global stylesheet: `frontend/src/css/style.css`
+  - Per-theme files: `frontend/src/css/themes/*.css`
+- Prefer adding a **new theme file** in `frontend/src/css/themes/` over growing one large monolithic CSS file.
+- Keep each theme self-contained with variables for:
+  - App shell/surfaces (`--app-*`)
+  - Nuxt UI tokens (`--ui-*` and `--ui-color-*`) so `UButton`, `UTabs`, and related components change with the selected theme.
+- Theme state is managed by `frontend/src/composables/useTheme.js` and persisted in local storage under `mytube:settings:theme`.
+- Current theme names:
+  - `night`: legacy/current theme
+  - `dark`: new default theme when no saved preference exists
+- Theme selection UI lives at `frontend/src/pages/settings.vue`.
+- When adding a new theme:
+  - Create `frontend/src/css/themes/<theme-name>.css`
+  - Import it from `frontend/src/css/style.css`
+  - Add it to `supportedThemes` in `frontend/src/composables/useTheme.js`
+  - Expose it in the `/settings` theme selector
+
 ## Change Guidance
 
 - For backend-only changes:
