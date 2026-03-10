@@ -1,6 +1,8 @@
 from unittest.mock import patch
 
 from app.services.resolver.direct_resolver import DirectUrlResolver
+from app.services.resolver.extractors import get_extractor, duration_seconds_parse
+from app.services.resolver.extractors import generic, soundcloud, youtube
 from app.services.resolver.yt_dlp_resolver import YtDlpResolver
 from app.services.source_resolver import CompositeSourceResolver
 
@@ -51,44 +53,76 @@ def test_composite_resolver_empty_default_enabled_returns_no_sites():
     assert payload["default_enabled_sites"] == []
 
 
-def test_yt_dlp_resolver_coerces_float_duration_seconds():
-    assert YtDlpResolver._duration_seconds(242.0) == 242
-    assert YtDlpResolver._duration_seconds("340.9") == 340
-    assert YtDlpResolver._duration_seconds(None) is None
+def test_extractor_duration_seconds_parse():
+    """Shared duration parsing used by all extractors."""
+    assert duration_seconds_parse(242.0) == 242
+    assert duration_seconds_parse("340.9") == 340
+    assert duration_seconds_parse(None) is None
+    assert duration_seconds_parse(100) == 100
 
 
-def test_yt_dlp_resolver_title_from_info_uses_title():
-    assert YtDlpResolver._title_from_info({"title": "My Track"}) == "My Track"
-    assert YtDlpResolver._title_from_info({"title": "  Trimmed  "}) == "Trimmed"
+def test_youtube_extractor_title_uses_title():
+    ext = youtube.youtube_extractor
+    assert ext.title_from_info({"title": "My Track"}) == "My Track"
+    assert ext.title_from_info({"title": "  Trimmed  "}) == "Trimmed"
+    assert ext.title_from_info({}) is None
+    assert ext.title_from_info({"fulltitle": "Ignored"}) is None
 
 
-def test_yt_dlp_resolver_title_from_info_falls_back_to_fulltitle():
-    """Some extractors (e.g. SoundCloud) provide fulltitle instead of title."""
-    assert YtDlpResolver._title_from_info({"fulltitle": "Drum and Bass Mix 2026"}) == "Drum and Bass Mix 2026"
-    assert YtDlpResolver._title_from_info({}) is None
-    assert YtDlpResolver._title_from_info({"title": "", "fulltitle": "Fallback"}) == "Fallback"
+def test_youtube_extractor_thumbnail_uses_thumbnail():
+    ext = youtube.youtube_extractor
+    assert ext.thumbnail_from_info({"thumbnail": "https://example.com/thumb.jpg"}) == "https://example.com/thumb.jpg"
+    assert ext.thumbnail_from_info({}) is None
 
 
-def test_yt_dlp_resolver_title_from_info_prefers_title_over_fulltitle():
-    assert YtDlpResolver._title_from_info({"title": "Title", "fulltitle": "Full"}) == "Title"
+def test_youtube_extractor_channel_uses_uploader_or_channel():
+    ext = youtube.youtube_extractor
+    assert ext.channel_from_info({"uploader": "Channel A"}) == "Channel A"
+    assert ext.channel_from_info({"channel": "Channel B"}) == "Channel B"
+    assert ext.channel_from_info({"uploader": "A", "channel": "B"}) == "A"
 
 
-def test_yt_dlp_resolver_title_from_info_returns_none_when_both_missing_or_empty():
-    assert YtDlpResolver._title_from_info({}) is None
-    assert YtDlpResolver._title_from_info({"title": "", "fulltitle": ""}) is None
-    assert YtDlpResolver._title_from_info({"title": None, "fulltitle": None}) is None
+def test_soundcloud_extractor_title_prefers_fulltitle():
+    """SoundCloud search/flat-playlist often uses fulltitle."""
+    ext = soundcloud.soundcloud_extractor
+    assert ext.title_from_info({"fulltitle": "Drum and Bass Mix 2026"}) == "Drum and Bass Mix 2026"
+    assert ext.title_from_info({"title": "Fallback Title"}) == "Fallback Title"
+    assert ext.title_from_info({"title": "Title", "fulltitle": "Full"}) == "Full"
+    assert ext.title_from_info({}) is None
 
 
-def test_yt_dlp_resolver_thumbnail_from_info_uses_thumbnail():
-    assert YtDlpResolver._thumbnail_from_info({"thumbnail": "https://example.com/thumb.jpg"}) == "https://example.com/thumb.jpg"
-
-
-def test_yt_dlp_resolver_thumbnail_from_info_falls_back_to_artwork_url():
-    """SoundCloud uses artwork_url instead of thumbnail."""
+def test_soundcloud_extractor_thumbnail_uses_artwork_url_then_thumbnails():
+    ext = soundcloud.soundcloud_extractor
     info = {"artwork_url": "https://i1.sndcdn.com/artworks-abc-large.jpg"}
-    assert YtDlpResolver._thumbnail_from_info(info) == "https://i1.sndcdn.com/artworks-abc-large.jpg"
-    assert YtDlpResolver._thumbnail_from_info({}) is None
-    assert YtDlpResolver._thumbnail_from_info({"thumbnail": "", "artwork_url": "https://art.jpg"}) == "https://art.jpg"
+    assert ext.thumbnail_from_info(info) == "https://i1.sndcdn.com/artworks-abc-large.jpg"
+    assert ext.thumbnail_from_info({}) is None
+    assert ext.thumbnail_from_info({"thumbnail": "", "artwork_url": "https://art.jpg"}) == "https://art.jpg"
+    thumb_list = [{"id": "t300x300", "url": "https://thumb300.jpg"}]
+    assert ext.thumbnail_from_info({"thumbnails": thumb_list}) == "https://thumb300.jpg"
+
+
+def test_generic_extractor_title_fallback_title_or_fulltitle():
+    ext = generic.generic_extractor
+    assert ext.title_from_info({"title": "My Track"}) == "My Track"
+    assert ext.title_from_info({"fulltitle": "Drum and Bass Mix 2026"}) == "Drum and Bass Mix 2026"
+    assert ext.title_from_info({"title": "Title", "fulltitle": "Full"}) == "Title"
+    assert ext.title_from_info({}) is None
+    assert ext.title_from_info({"title": "", "fulltitle": "Fallback"}) == "Fallback"
+
+
+def test_generic_extractor_thumbnail_fallback_thumbnail_artwork_thumbnails():
+    ext = generic.generic_extractor
+    assert ext.thumbnail_from_info({"thumbnail": "https://example.com/thumb.jpg"}) == "https://example.com/thumb.jpg"
+    assert ext.thumbnail_from_info({"artwork_url": "https://i1.sndcdn.com/artworks-abc.jpg"}) == "https://i1.sndcdn.com/artworks-abc.jpg"
+    assert ext.thumbnail_from_info({}) is None
+
+
+def test_get_extractor_dispatches_by_extractor_key():
+    assert get_extractor({"extractor": "youtube"}) is youtube.youtube_extractor
+    assert get_extractor({"extractor": "Soundcloud"}) is soundcloud.soundcloud_extractor
+    assert get_extractor({"extractor_key": "Youtube"}) is youtube.youtube_extractor
+    assert get_extractor({"extractor": "vimeo"}) is generic.generic_extractor
+    assert get_extractor({}) is generic.generic_extractor
 
 
 def test_yt_dlp_resolver_resolve_video_uses_single_entry_when_playlist_returned():

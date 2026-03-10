@@ -7,6 +7,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from app.services.resolver.base import PlaylistPreview, ResolvedTrack, ResolverError, SourceResolver
+from app.services.resolver.extractors import get_extractor
 from app.services.resolver.utils import is_youtube_url, source_site_from_url
 
 logger = logging.getLogger(__name__)
@@ -247,57 +248,6 @@ class YtDlpResolver(SourceResolver):
         )
         return None
 
-    @staticmethod
-    def _title_from_info(info: dict[str, Any]) -> str | None:
-        """Title from yt-dlp info dict; some extractors (e.g. SoundCloud) use fulltitle."""
-        title = info.get("title")
-        if isinstance(title, str) and title.strip():
-            return title.strip()
-        full = info.get("fulltitle")
-        if isinstance(full, str) and full.strip():
-            return full.strip()
-        return None
-
-    @staticmethod
-    def _thumbnail_from_info(info: dict[str, Any]) -> str | None:
-        """Thumbnail URL from yt-dlp info; SoundCloud uses artwork_url or thumbnails list."""
-        thumb = info.get("thumbnail")
-        if isinstance(thumb, str) and thumb.strip().startswith("http"):
-            return thumb.strip()
-        artwork = info.get("artwork_url")
-        if isinstance(artwork, str) and artwork.strip().startswith("http"):
-            return artwork.strip()
-        # SoundCloud search/flat-playlist often provides thumbnails list only
-        thumb_list = info.get("thumbnails")
-        if isinstance(thumb_list, list) and thumb_list:
-            # Prefer a medium/large size if present
-            by_id = {t.get("id"): t for t in thumb_list if isinstance(t, dict) and t.get("url")}
-            for preferred in ("t300x300", "large", "t500x500", "small", "badge"):
-                if preferred in by_id:
-                    url = by_id[preferred].get("url")
-                    if isinstance(url, str) and url.strip().startswith("http"):
-                        return url.strip()
-            # Fallback: first entry with a valid url
-            for t in thumb_list:
-                if isinstance(t, dict):
-                    url = t.get("url")
-                    if isinstance(url, str) and url.strip().startswith("http"):
-                        return url.strip()
-        return None
-
-    @staticmethod
-    def _duration_seconds(value: Any) -> int | None:
-        if value is None or isinstance(value, bool):
-            return None
-        if isinstance(value, (int, float)):
-            return max(0, int(value))
-        if isinstance(value, str):
-            try:
-                return max(0, int(float(value.strip())))
-            except ValueError:
-                return None
-        return None
-
     def is_playlist_url(self, url: str) -> bool:
         normalized = self.normalize_url(url)
         logger.info(
@@ -396,7 +346,8 @@ class YtDlpResolver(SourceResolver):
         if len(raw_entries) == 1:
             data = raw_entries[0]
         direct_url = data.get("url")
-        title = self._title_from_info(data)
+        extractor = get_extractor(data)
+        title = extractor.title_from_info(data)
         logger.info(
             "yt_dlp_resolver: resolve_video got data has_url=%s title=%s extractor=%s",
             bool(direct_url),
@@ -412,14 +363,14 @@ class YtDlpResolver(SourceResolver):
             )
             raise YtDlpError("Could not resolve direct stream URL")
         is_live = bool(data.get("is_live")) or str(data.get("live_status") or "").lower() in {"is_live", "post_live"}
-        duration = self._duration_seconds(data.get("duration"))
+        duration = extractor.duration_seconds(data.get("duration"))
         track = ResolvedTrack(
             source_url=url,
             normalized_url=normalized,
             title=title,
-            channel=data.get("uploader") or data.get("channel"),
+            channel=extractor.channel_from_info(data),
             duration_seconds=duration,
-            thumbnail_url=self._thumbnail_from_info(data),
+            thumbnail_url=extractor.thumbnail_from_info(data),
             stream_url=direct_url,
             source_site=source_site_from_url(normalized),
             is_live=is_live,
@@ -460,19 +411,21 @@ class YtDlpResolver(SourceResolver):
                 )
                 skipped += 1
                 continue
-            duration = self._duration_seconds(entry.get("duration"))
+            entry_extractor = get_extractor(entry)
+            duration = entry_extractor.duration_seconds(entry.get("duration"))
             entries.append(
                 {
                     "source_url": source_url,
                     "normalized_url": source_url,
-                    "title": self._title_from_info(entry),
-                    "channel": entry.get("uploader") or entry.get("channel"),
+                    "title": entry_extractor.title_from_info(entry),
+                    "channel": entry_extractor.channel_from_info(entry),
                     "duration_seconds": duration,
-                    "thumbnail_url": self._thumbnail_from_info(entry),
+                    "thumbnail_url": entry_extractor.thumbnail_from_info(entry),
                     "source_site": source_site_from_url(source_url),
                     "is_live": bool(entry.get("is_live")),
                 }
             )
+        playlist_extractor = get_extractor(data)
         logger.info(
             "yt_dlp_resolver: preview_playlist done entries=%s skipped=%s total_raw=%s",
             len(entries),
@@ -483,9 +436,9 @@ class YtDlpResolver(SourceResolver):
         return PlaylistPreview(
             source_url=normalized,
             title=data.get("title"),
-            channel=data.get("uploader") or data.get("channel"),
+            channel=playlist_extractor.channel_from_info(data),
             entries=entries,
-            thumbnail_url=self._thumbnail_from_info(data),
+            thumbnail_url=playlist_extractor.thumbnail_from_info(data),
         )
 
     def search(self, query: str, site: str = "youtube", limit: int = 10) -> list[dict[str, Any]]:
@@ -526,16 +479,17 @@ class YtDlpResolver(SourceResolver):
                 )
                 skipped += 1
                 continue
-            duration = self._duration_seconds(entry.get("duration"))
+            entry_extractor = get_extractor(entry)
+            duration = entry_extractor.duration_seconds(entry.get("duration"))
             results.append(
                 {
                     "id": entry.get("id") or source_url,
                     "source_url": source_url,
                     "normalized_url": source_url,
-                    "title": self._title_from_info(entry),
-                    "channel": entry.get("uploader") or entry.get("channel"),
+                    "title": entry_extractor.title_from_info(entry),
+                    "channel": entry_extractor.channel_from_info(entry),
                     "duration_seconds": duration,
-                    "thumbnail_url": self._thumbnail_from_info(entry),
+                    "thumbnail_url": entry_extractor.thumbnail_from_info(entry),
                     "source_site": source_site_from_url(source_url) or site_key.capitalize(),
                     "site": site_key,
                 }
