@@ -1,5 +1,5 @@
 <template>
-  <section class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3 flex flex-col">
+  <section class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 p-3 flex flex-col surface-panel">
     <h2 class="text-2xl font-bold">Queue</h2>
     <ul class="mt-3 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
       <li v-for="item in filteredQueue" :key="item.id">

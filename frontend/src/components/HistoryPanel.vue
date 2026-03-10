@@ -1,5 +1,5 @@
 <template>
-  <section class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-3 flex flex-col">
+  <section class="min-h-0 h-full overflow-hidden rounded-xl border border-neutral-700 p-3 flex flex-col surface-panel">
     <div class="flex items-center justify-between gap-3">
       <h2 class="text-2xl font-bold">Play History</h2>
       <UButton

@@ -1,10 +1,10 @@
 <template>
-  <div class="group flex items-center gap-3 rounded-md border border-neutral-700 px-3 py-2">
+  <div class="group flex items-center gap-3 rounded-md border px-3 py-2 playlist-card">
     <img
       v-if="thumbnailSrc"
       :src="thumbnailSrc"
       :alt="item.title || 'Thumbnail'"
-      class="h-14 w-24 shrink-0 rounded object-cover bg-neutral-800"
+      class="h-14 w-24 shrink-0 rounded object-cover surface-elevated"
       loading="lazy"
       referrerpolicy="no-referrer"
     />
@@ -13,12 +13,12 @@
         <template v-if="mode === 'queue' && item.queue_position != null">#{{ item.queue_position }} </template>
         {{ item.title || item.source_url }}
       </p>
-      <p v-if="showSecondary" class="truncate text-xs text-neutral-400">
+      <p v-if="showSecondary" class="truncate text-xs text-muted">
         <template v-if="mode === 'queue'">{{ item.status }} · {{ item.channel || "unknown" }}</template>
         <template v-else-if="mode === 'history'">{{ item.status }}</template>
         <template v-else-if="mode === 'search' && item.channel">{{ item.channel }}</template>
       </p>
-      <p v-if="showDuration && item.duration_seconds != null" class="truncate text-xs text-neutral-400">
+      <p v-if="showDuration && item.duration_seconds != null" class="truncate text-xs text-muted">
         {{ formatDuration(item.duration_seconds) }}
       </p>
     </div>
@@ -30,12 +30,12 @@
       <UDropdownMenu :items="dropdownItems" @update:open="(open) => !open && (playlistSearchTerm = '')">
         <template #playlist-filter>
           <div class="flex items-center gap-2 px-2 py-1.5">
-            <UIcon name="i-lucide-search" class="size-4 shrink-0 text-neutral-400" />
+            <UIcon name="i-lucide-search" class="size-4 shrink-0 text-muted" />
             <input
               v-model="playlistSearchTerm"
               type="text"
               placeholder="Find a playlist"
-              class="min-w-0 flex-1 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-0"
+              class="min-w-0 flex-1 rounded-md border-0 bg-transparent px-2 py-1 text-sm placeholder-neutral-500 focus:outline-none focus:ring-0"
               @click.stop
               @keydown.stop
               @keyup.stop

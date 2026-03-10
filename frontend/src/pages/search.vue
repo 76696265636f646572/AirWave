@@ -1,7 +1,7 @@
 <template>
-  <section class="min-h-0 h-full rounded-xl border border-neutral-700 bg-neutral-900 p-6 overflow-auto">
+  <section class="min-h-0 h-full rounded-xl border border-neutral-700 p-6 overflow-auto surface-panel">
     <h2 class="text-2xl font-bold">YouTube Search</h2>
-    <p class="mt-1 text-sm text-neutral-400">
+    <p class="mt-1 text-sm text-muted">
       <template v-if="query">
         Showing results for "{{ query }}"
       </template>
@@ -10,9 +10,9 @@
       </template>
     </p>
 
-    <div v-if="loading" class="mt-4 text-sm text-neutral-300">Searching...</div>
+    <div v-if="loading" class="mt-4 text-sm text-muted">Searching...</div>
     <div v-else-if="errorMessage" class="mt-4 text-sm text-red-300">{{ errorMessage }}</div>
-    <div v-else-if="query && !results.length" class="mt-4 text-sm text-neutral-300">No results found.</div>
+    <div v-else-if="query && !results.length" class="mt-4 text-sm text-muted">No results found.</div>
 
     <ul v-if="results.length" class="mt-4 space-y-2">
       <li v-for="item in results" :key="item.id || item.source_url">

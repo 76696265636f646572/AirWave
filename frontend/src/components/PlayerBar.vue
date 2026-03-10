@@ -1,8 +1,8 @@
 <template>
-  <footer class="sticky bottom-0 z-10 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 px-2 py-2 sm:px-3 md:static">
+  <footer class="sticky bottom-0 z-10 shrink-0 rounded-xl border border-neutral-700 px-2 py-2 sm:px-3 md:static surface-panel">
     <div class="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(340px,560px)_minmax(0,1fr)]">
       <div class="flex min-w-0 items-center gap-3">
-        <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-700 bg-neutral-800">
+        <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-700 surface-elevated">
           <img
             v-if="playbackState.now_playing_thumbnail_url"
             :src="playbackState.now_playing_thumbnail_url"
@@ -14,7 +14,7 @@
           <p class="truncate text-base font-semibold">
             {{ playbackState.now_playing_title || "No active track" }}
           </p>
-          <p class="truncate text-xs text-neutral-400">
+          <p class="truncate text-xs text-muted">
             {{ (playbackState.now_playing_channel || playbackState.mode || "idle").toUpperCase() }}
             <span v-if="playbackState.elapsed_seconds != null"> · {{ formatDuration(playbackState.elapsed_seconds) }}</span>
             <span v-if="playbackState.duration_seconds"> / {{ formatDuration(playbackState.duration_seconds) }}</span>
@@ -70,7 +70,7 @@
             class="w-full"
           />
         </div>
-        <div class="mt-1 flex w-full items-center justify-between text-xs text-neutral-400">
+        <div class="mt-1 flex w-full items-center justify-between text-xs text-muted">
           <span>{{ formatDuration(playbackState.elapsed_seconds) }}</span>
           <span>{{ formatDuration(playbackState.duration_seconds) }}</span>
         </div>
