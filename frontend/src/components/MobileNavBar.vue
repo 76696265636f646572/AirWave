@@ -88,10 +88,10 @@ const router = useRouter();
 const route = useRoute();
 const { mobileView } = useUiState();
 
-/** Home is active only when showing the index route, not when Search or Settings (which also use home pane). */
+/** Only one nav item is ever active: route-based (Home/Search/Settings) only when home pane is shown. */
 const isActiveHome = computed(() => mobileView.value === MOBILE_VIEW_HOME && route.path === "/");
-const isActiveSearch = computed(() => route.path === "/search");
-const isActiveSettings = computed(() => route.path === "/settings");
+const isActiveSearch = computed(() => mobileView.value === MOBILE_VIEW_HOME && route.path === "/search");
+const isActiveSettings = computed(() => mobileView.value === MOBILE_VIEW_HOME && route.path === "/settings");
 
 function goHome() {
   mobileView.value = MOBILE_VIEW_HOME;
