@@ -1,7 +1,53 @@
 <template>
-  <footer class="sticky bottom-0 z-10 shrink-0 rounded-xl border border-neutral-700 px-2 py-2 sm:px-3 md:static surface-panel">
-    <div class="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(340px,560px)_minmax(0,1fr)]">
-      <div class="flex min-w-0 items-center gap-3">
+  <footer class="player-bar sticky bottom-0 z-10 shrink-0 rounded-xl border border-neutral-700 px-2 py-2 sm:px-3 md:static surface-panel">
+    <!-- Mobile: minimal bar — thumbnail, title, play/pause only (controls live in fullscreen player) -->
+    <div class="flex md:hidden min-w-0 items-center gap-3">
+      <div
+        class="player-bar-strip flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+        role="button"
+        tabindex="0"
+        aria-label="Expand player"
+        @click="onStripClick"
+      >
+        <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-700 surface-elevated">
+          <img
+            v-if="playbackState.now_playing_thumbnail_url"
+            :src="playbackState.now_playing_thumbnail_url"
+            alt=""
+            class="h-full w-full object-cover"
+          />
+          <div v-else class="flex h-full w-full items-center justify-center bg-neutral-800 text-muted">
+            <UIcon name="i-lucide-music" class="size-6" />
+          </div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-semibold">
+            {{ playbackState.now_playing_title || "No active track" }}
+          </p>
+          <p class="truncate text-xs text-muted">
+            {{ (playbackState.now_playing_channel || playbackState.mode || "idle").toUpperCase() }}
+          </p>
+        </div>
+      </div>
+      <UButton
+        type="button"
+        color="primary"
+        variant="solid"
+        class="player-bar-mobile-play shrink-0 min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center p-0"
+        aria-label="Play / Pause"
+        @click.stop="togglePause"
+      >
+        <span class="flex items-center justify-center size-full">
+          <UIcon :name="playPauseIcon" class="size-6 shrink-0" />
+        </span>
+      </UButton>
+    </div>
+
+    <!-- Desktop: full bar with progress and all controls -->
+    <div class="hidden grid items-center gap-3 md:grid md:grid-cols-[minmax(0,1fr)_minmax(340px,560px)_minmax(0,1fr)]">
+      <div
+        class="player-bar-strip flex min-w-0 cursor-default items-center gap-3"
+      >
         <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-neutral-700 surface-elevated">
           <img
             v-if="playbackState.now_playing_thumbnail_url"
@@ -77,7 +123,7 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2 md:justify-end md:pl-4">
-          <div class="flex items-center gap-2">
+          <div class="hidden items-center gap-2 md:flex">
             <UButton
               type="button"
               :color="sidebarView === SIDEBAR_QUEUE_VIEW ? 'primary' : 'neutral'"
@@ -133,13 +179,15 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from "vue";
 import { formatDuration } from "../composables/useDuration";
+import { useBreakpoint } from "../composables/useBreakpoint";
 import { useLibraryState } from "../composables/useLibraryState";
 import { usePlaybackState } from "../composables/usePlaybackState";
-import { SIDEBAR_QUEUE_VIEW, SIDEBAR_SONOS_VIEW, useUiState } from "../composables/useUiState";
+import { SIDEBAR_QUEUE_VIEW, SIDEBAR_SONOS_VIEW, fullScreenPlayerOpen, useUiState } from "../composables/useUiState";
 
 const audioEl = ref(null);
 const progressTrackEl = ref(null);
 const wantsLocalPlayback = ref(false);
+const { isMobile } = useBreakpoint();
 const { playbackState } = usePlaybackState();
 const { sidebarView } = useUiState();
 const { skipCurrent, previousTrack, togglePause, setRepeatMode, setShuffleEnabled, seekToPercent } = useLibraryState();
@@ -154,6 +202,10 @@ const repeatLabel = computed(() => {
   if (playbackState.value.repeat_mode === "one") return "Repeat one";
   return "Repeat off";
 });
+
+function onStripClick() {
+  if (isMobile.value) fullScreenPlayerOpen.value = true;
+}
 
 function cycleRepeatMode() {
   const modes = ["off", "all", "one"];

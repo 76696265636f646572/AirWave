@@ -11,7 +11,9 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    FullScreenPlayer: typeof import('./src/components/FullScreenPlayer.vue')['default']
     HistoryPanel: typeof import('./src/components/HistoryPanel.vue')['default']
+    MobileNavBar: typeof import('./src/components/MobileNavBar.vue')['default']
     PlayerBar: typeof import('./src/components/PlayerBar.vue')['default']
     QueuePanel: typeof import('./src/components/QueuePanel.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

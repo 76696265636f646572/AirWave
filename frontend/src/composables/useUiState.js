@@ -18,6 +18,17 @@ const activeQueueTab = ref(QUEUE_TAB);
 const searchText = ref("");
 const activePlaylistId = ref(null);
 
+/** Mobile only: which pane is shown in the main content area. */
+export const MOBILE_VIEW_HOME = "home";
+export const MOBILE_VIEW_PLAYLISTS = "playlists";
+export const MOBILE_VIEW_QUEUE = "queue";
+export const MOBILE_VIEW_SONOS = "sonos";
+
+export const mobileView = ref(MOBILE_VIEW_HOME);
+
+/** Mobile only: true when the full-screen player overlay is open. */
+export const fullScreenPlayerOpen = ref(false);
+
 let initialized = false;
 
 function readStoredSetting(key) {
@@ -122,6 +133,8 @@ export function useUiState() {
     searchText,
     activePlaylistId,
     queueSidebarTabs,
+    mobileView,
+    fullScreenPlayerOpen,
     initializeUiState,
     onSearchTextChange,
     onYoutubeSearch,

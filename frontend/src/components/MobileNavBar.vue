@@ -1,0 +1,108 @@
+<template>
+  <nav
+    class="mobile-nav-bar flex shrink-0 items-center justify-around gap-1 border-t border-neutral-700 bg-[var(--app-surface)] py-2"
+    aria-label="Main navigation"
+  >
+    <UButton
+      type="button"
+      :color="mobileView === MOBILE_VIEW_HOME ? 'primary' : 'neutral'"
+      :variant="mobileView === MOBILE_VIEW_HOME ? 'soft' : 'ghost'"
+      class="flex min-h-[2.75rem] min-w-[2.75rem] flex-col gap-0.5 p-2"
+      aria-label="Home"
+      @click="goHome"
+    >
+      <UIcon name="i-lucide-house" class="size-5" />
+      <span class="text-xs">Home</span>
+    </UButton>
+    <UButton
+      type="button"
+      :color="isActiveSearch ? 'primary' : 'neutral'"
+      :variant="isActiveSearch ? 'soft' : 'ghost'"
+      class="flex min-h-[2.75rem] min-w-[2.75rem] flex-col gap-0.5 p-2"
+      aria-label="Search"
+      @click="goSearch"
+    >
+      <UIcon name="i-lucide-search" class="size-5" />
+      <span class="text-xs">Search</span>
+    </UButton>
+    <UButton
+      type="button"
+      :color="mobileView === MOBILE_VIEW_PLAYLISTS ? 'primary' : 'neutral'"
+      :variant="mobileView === MOBILE_VIEW_PLAYLISTS ? 'soft' : 'ghost'"
+      class="flex min-h-[2.75rem] min-w-[2.75rem] flex-col gap-0.5 p-2"
+      aria-label="Playlists"
+      @click="mobileView = MOBILE_VIEW_PLAYLISTS"
+    >
+      <UIcon name="i-lucide-list" class="size-5" />
+      <span class="text-xs">Playlists</span>
+    </UButton>
+    <UButton
+      type="button"
+      :color="mobileView === MOBILE_VIEW_QUEUE ? 'primary' : 'neutral'"
+      :variant="mobileView === MOBILE_VIEW_QUEUE ? 'soft' : 'ghost'"
+      class="flex min-h-[2.75rem] min-w-[2.75rem] flex-col gap-0.5 p-2"
+      aria-label="Queue and history"
+      @click="mobileView = MOBILE_VIEW_QUEUE"
+    >
+      <UIcon name="i-lucide-list-music" class="size-5" />
+      <span class="text-xs">Queue</span>
+    </UButton>
+    <UButton
+      type="button"
+      :color="mobileView === MOBILE_VIEW_SONOS ? 'primary' : 'neutral'"
+      :variant="mobileView === MOBILE_VIEW_SONOS ? 'soft' : 'ghost'"
+      class="flex min-h-[2.75rem] min-w-[2.75rem] flex-col gap-0.5 p-2"
+      aria-label="Sonos speakers"
+      @click="mobileView = MOBILE_VIEW_SONOS"
+    >
+      <UIcon name="i-lucide-speaker" class="size-5" />
+      <span class="text-xs">Sonos</span>
+    </UButton>
+    <UButton
+      type="button"
+      :color="isActiveSettings ? 'primary' : 'neutral'"
+      :variant="isActiveSettings ? 'soft' : 'ghost'"
+      class="flex min-h-[2.75rem] min-w-[2.75rem] flex-col gap-0.5 p-2"
+      aria-label="Settings"
+      @click="goSettings"
+    >
+      <UIcon name="i-lucide-settings" class="size-5" />
+      <span class="text-xs">Settings</span>
+    </UButton>
+  </nav>
+</template>
+
+<script setup>
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
+import {
+  MOBILE_VIEW_HOME,
+  MOBILE_VIEW_PLAYLISTS,
+  MOBILE_VIEW_QUEUE,
+  MOBILE_VIEW_SONOS,
+  useUiState,
+} from "../composables/useUiState";
+
+const router = useRouter();
+const route = useRoute();
+const { mobileView } = useUiState();
+
+const isActiveSettings = computed(() => route.path === "/settings");
+const isActiveSearch = computed(() => route.path === "/search");
+
+function goHome() {
+  mobileView.value = MOBILE_VIEW_HOME;
+  if (route.path !== "/") router.push("/");
+}
+
+function goSearch() {
+  mobileView.value = MOBILE_VIEW_HOME;
+  router.push("/search");
+}
+
+function goSettings() {
+  mobileView.value = MOBILE_VIEW_HOME;
+  router.push("/settings");
+}
+</script>

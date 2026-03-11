@@ -24,6 +24,97 @@ body {
   background-color: var(--app-body-bg);
   background-image: var(--app-body-gradient);
   background-size: cover;
+  min-height: 100dvh;
+}
+
+/* Main content area: fill available height, allow scroll */
+.main-content {
+  min-height: 0;
+}
+
+/* Mobile: app-like layout with safe areas and touch-friendly player */
+@media (max-width: 767px) {
+  .app-shell {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: 0;
+  }
+
+  /* Reserve space so main content doesn't sit under the fixed bottom strip */
+  .main-grid-with-mobile-bottom {
+    padding-bottom: var(--mobile-bottom-height, 11rem);
+  }
+
+  /* Fixed bottom strip: nav at very bottom, player floating above it (Spotify-style) */
+  .mobile-bottom-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    pointer-events: none;
+  }
+  .mobile-bottom-fixed > * {
+    pointer-events: auto;
+  }
+
+  /* Player bar: floating above nav, rounded top, no bottom safe area (nav has it) */
+  .mobile-bottom-fixed .player-bar {
+    padding-bottom: 0.5rem;
+    border-radius: 1rem 1rem 0 0;
+    border-bottom: none;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Nav bar: at the very bottom, full width */
+  .mobile-bottom-fixed .mobile-nav-bar {
+    flex-shrink: 0;
+    padding-bottom: 0;
+  }
+
+  /* Minimum touch target ~44px for primary controls */
+  .player-bar button[aria-label="Toggle play pause"],
+  .player-bar button[aria-label="Play / Pause"] {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  /* Center play icon in mobile player bar (optical centering for play triangle) */
+  .player-bar-mobile-play {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .player-bar-mobile-play > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .player-bar-mobile-play svg {
+    display: block;
+    margin: 0;
+    flex-shrink: 0;
+    /* Lucide play triangle is drawn with extra space on the left; nudge left for optical center */
+    transform: translateX(-1px);
+  }
+
+  /* Playlist list items: app-like tap targets */
+  .playlists-page .playlist-card,
+  .playlist-card.touch-target {
+    min-height: 2.75rem;
+  }
+}
+
+/* Mobile nav bar (when not in fixed strip, e.g. desktop never) */
+.mobile-nav-bar {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .surface-panel {

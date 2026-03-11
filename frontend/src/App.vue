@@ -1,18 +1,68 @@
 <template>
   <UApp :toaster="{ position: 'bottom-right' }">
-    <div class="app-shell h-dvh overflow-hidden p-3 text-neutral-100 flex flex-col gap-3">
+    <div class="app-shell min-h-dvh h-dvh overflow-hidden p-3 text-neutral-100 flex flex-col gap-3">
       <TopBar />
 
-      <div class="min-h-0 flex-1 grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
-        <SidebarPlaylists class="h-full" />
+      <div
+        class="main-grid min-h-0 flex-1 flex min-w-0 gap-3 xl:grid xl:grid-cols-[260px_minmax(0,1fr)_340px]"
+        :class="{ 'main-grid-with-mobile-bottom': isMobile }"
+      >
+        <SidebarPlaylists class="h-full hidden md:block xl:block" />
 
-        <main class="min-h-0 h-full">
-          <RouterView v-slot="{ Component }">
-            <component :is="Component" />
-          </RouterView>
+        <main class="main-content min-h-0 flex-1 flex min-w-0 flex-col overflow-hidden">
+          <!-- Desktop: single RouterView -->
+          <template v-if="!isMobile">
+            <div class="min-h-0 flex-1 overflow-auto">
+              <RouterView v-slot="{ Component }">
+                <component :is="Component" />
+              </RouterView>
+            </div>
+          </template>
+          <!-- Mobile: panes in main content (no modals), one visible at a time -->
+          <template v-else>
+            <div
+              v-show="mobileView === MOBILE_VIEW_HOME"
+              class="mobile-pane min-h-0 flex-1 overflow-auto"
+            >
+              <RouterView v-slot="{ Component }">
+                <component :is="Component" />
+              </RouterView>
+            </div>
+            <div
+              v-show="mobileView === MOBILE_VIEW_PLAYLISTS"
+              class="mobile-pane min-h-0 flex-1 overflow-auto rounded-xl border border-neutral-700 surface-panel"
+            >
+              <SidebarPlaylists class="h-full min-h-0" />
+            </div>
+            <div
+              v-show="mobileView === MOBILE_VIEW_QUEUE"
+              class="mobile-pane min-h-0 flex-1 flex flex-col overflow-hidden rounded-xl border border-neutral-700 surface-panel"
+            >
+              <UTabs
+                v-model="activeQueueTab"
+                :items="queueSidebarTabs"
+                class="min-h-0 flex-1"
+                :ui="{ content: 'min-h-0 flex-1 overflow-auto' }"
+                :unmount-on-hide="false"
+              >
+                <template #queue>
+                  <QueuePanel class="min-h-0 h-full" />
+                </template>
+                <template #history>
+                  <HistoryPanel class="min-h-0 h-full" />
+                </template>
+              </UTabs>
+            </div>
+            <div
+              v-show="mobileView === MOBILE_VIEW_SONOS"
+              class="mobile-pane min-h-0 flex-1 overflow-auto rounded-xl border border-neutral-700 surface-panel"
+            >
+              <SonosPanel class="min-h-0 h-full" />
+            </div>
+          </template>
         </main>
 
-        <aside class="min-h-0 h-full flex flex-col gap-3">
+        <aside v-if="!isMobile" class="min-h-0 h-full flex flex-col gap-3">
           <template v-if="sidebarView === SIDEBAR_QUEUE_VIEW">
             <UTabs
               v-model="activeQueueTab"
@@ -35,7 +85,15 @@
         </aside>
       </div>
 
-      <PlayerBar />
+      <!-- Mobile: fixed bottom strip — player floats above nav (Spotify-style) -->
+      <div v-if="isMobile" class="mobile-bottom-fixed">
+        <PlayerBar />
+        <MobileNavBar />
+      </div>
+      <!-- Desktop: player in flow -->
+      <PlayerBar v-else />
+
+      <FullScreenPlayer v-if="isMobile" />
     </div>
   </UApp>
 </template>
@@ -44,24 +102,39 @@
 import { onMounted } from "vue";
 import { useRoute } from "vue-router";
 
+import FullScreenPlayer from "./components/FullScreenPlayer.vue";
 import HistoryPanel from "./components/HistoryPanel.vue";
+import MobileNavBar from "./components/MobileNavBar.vue";
 import PlayerBar from "./components/PlayerBar.vue";
 import QueuePanel from "./components/QueuePanel.vue";
 import SidebarPlaylists from "./components/SidebarPlaylists.vue";
 import SonosPanel from "./components/SonosPanel.vue";
 import TopBar from "./components/TopBar.vue";
+import { useBreakpoint } from "./composables/useBreakpoint";
 import { initializeLibraryState } from "./composables/useLibraryState";
 import { initializeNotifications } from "./composables/useNotifications";
 import { initializePlaybackState } from "./composables/usePlaybackState";
 import { initializeSonosState } from "./composables/useSonosState";
 import {
+  MOBILE_VIEW_HOME,
+  MOBILE_VIEW_PLAYLISTS,
+  MOBILE_VIEW_QUEUE,
+  MOBILE_VIEW_SONOS,
   SIDEBAR_QUEUE_VIEW,
   useUiState,
 } from "./composables/useUiState";
 import { initializeTheme } from "./composables/useTheme";
 
 const route = useRoute();
-const { sidebarView, activeQueueTab, queueSidebarTabs, initializeUiState } = useUiState();
+const { isMobile } = useBreakpoint();
+const {
+  sidebarView,
+  activeQueueTab,
+  queueSidebarTabs,
+  mobileView,
+  initializeUiState,
+} = useUiState();
+
 initializeNotifications(useToast());
 
 onMounted(async () => {
