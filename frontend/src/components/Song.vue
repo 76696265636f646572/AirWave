@@ -1,13 +1,26 @@
 <template>
   <div class="group flex items-center gap-3 rounded-md border px-3 py-2 playlist-card">
-    <img
+    
+    <div
       v-if="thumbnailSrc"
-      :src="thumbnailSrc"
-      :alt="item.title || 'Thumbnail'"
-      class="h-14 w-24 shrink-0 rounded object-cover surface-elevated"
-      loading="lazy"
-      referrerpolicy="no-referrer"
-    />
+      class="relative h-14 w-24 shrink-0 overflow-hidden rounded surface-elevated"
+      @click="playNow(item.source_url)"
+    >
+      <img
+        :src="thumbnailSrc"
+        :alt="item.title || 'Thumbnail'"
+        class="h-full w-full object-cover"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+      />
+      <div
+        class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/40 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+        aria-hidden
+      >
+        <UIcon name="i-lucide-play" class="size-8 text-white drop-shadow-md" />
+      </div>
+    </div>
+    
     <div class="min-w-0 flex-1">
       <p class="truncate text-sm font-medium">
         <template v-if="mode === 'queue' && item.queue_position != null">#{{ item.queue_position }} </template>
@@ -27,7 +40,7 @@
       class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
       @click.stop
     >
-      <UDropdownMenu :items="dropdownItems" @update:open="(open) => !open && (playlistSearchTerm = '')">
+      <UDropdownMenu :items="dropdownItems" :ui="{ separator: 'hidden' }" @update:open="(open) => !open && (playlistSearchTerm = '')">
         <template #playlist-filter>
           <div class="flex items-center gap-2 px-2 py-1.5">
             <UIcon name="i-lucide-search" class="size-4 shrink-0 text-muted" />
@@ -44,6 +57,7 @@
           </div>
         </template>
         <UButton
+          class="cursor-pointer"
           type="button"
           icon="i-lucide-more-horizontal"
           color="neutral"
@@ -79,7 +93,17 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  playlistId: {
+    type: String,
+    default: null,
+  },
+  entryId: {
+    type: Number,
+    default: null,
+  },
 });
+
+const emit = defineEmits(["deleted"]);
 
 const { notifySuccess, notifyError } = useNotifications();
 
@@ -146,21 +170,46 @@ async function addToPlaylist(playlistId, url) {
   }
 }
 
+async function removeFromPlaylist(entryId) {
+  if (!entryId) return;
+  try {
+    const response = await fetch(`/api/playlists/entries/${entryId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail || `Request failed: ${response.status}`);
+    }
+    notifySuccess("Removed from playlist", "Item removed.");
+    emit("deleted");
+  } catch (error) {
+    notifyError("Could not remove from playlist", error);
+  }
+}
+
 const dropdownItems = computed(() => {
   const url = props.item?.source_url;
   const hasUrl = !!url;
   const items = [];
 
   if (hasUrl) {
-    items.push([
+    items.push(
       {
         label: "Play now",
         icon: "i-lucide-play",
         onSelect: () => playNow(url),
       },
-    ]);
+    );
   }
-
+  if (hasUrl) {
+    items.push(
+      {
+        label: "Add to queue",
+        icon: "i-lucide-list-music",
+        onSelect: () => addToQueue(url),
+      },
+    );
+  }
   const addToPlaylistChildren = [
     { type: "label", slot: "playlist-filter" },
     ...filteredPlaylists.value.map((p) => ({
@@ -170,25 +219,26 @@ const dropdownItems = computed(() => {
   ];
 
   if (hasUrl && props.playlists.length > 0) {
-    items.push([
+    items.push(
       {
         label: "Add to playlist",
         icon: "i-lucide-plus",
         children: [addToPlaylistChildren],
       },
-    ]);
+    );
   }
 
-  if (hasUrl) {
-    items.push([
+ 
+
+  if (props.playlistId && props.entryId != null) {
+    items.push(
       {
-        label: "Add to queue",
-        icon: "i-lucide-list-music",
-        onSelect: () => addToQueue(url),
+        label: "Remove from playlist",
+        icon: "i-lucide-trash-2",
+        onSelect: () => removeFromPlaylist(props.entryId),
       },
-    ]);
+    );
   }
-
   return items;
 });
 </script>

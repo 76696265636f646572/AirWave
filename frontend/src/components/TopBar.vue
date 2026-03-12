@@ -53,7 +53,7 @@
         <UButton type="submit" color="primary" variant="solid" size="md" class="flex-1 rounded-r-none sm:flex-none">
           {{ primaryActionLabel }}
         </UButton>
-        <UDropdownMenu :items="actionDropdownItems">
+        <UDropdownMenu :items="actionDropdownItems" :ui="{ separator: 'hidden' }">
           <UButton type="button" color="primary" variant="solid" size="md" class="rounded-l-none border-l-0">
             <UIcon name="i-lucide-chevron-down" class="size-4" />
           </UButton>
@@ -96,7 +96,7 @@
               <UButton type="submit" color="primary" variant="solid" class="flex-1 rounded-r-none">
                 {{ primaryActionLabel }}
               </UButton>
-              <UDropdownMenu :items="actionDropdownItems">
+              <UDropdownMenu :items="actionDropdownItems" :ui="{ separator: 'hidden' }">
                 <UButton type="button" color="primary" variant="solid" class="rounded-l-none border-l-0">
                   <span aria-hidden="true">|</span>
                   <UIcon name="i-lucide-chevron-down" class="size-4" />

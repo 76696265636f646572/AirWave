@@ -352,6 +352,18 @@ class Repository:
         queued = self.enqueue_items([new_item])
         return queued[0] if queued else None
 
+    def delete_playlist_entry(self, entry_id: int) -> bool:
+        with self.session() as session:
+            entry = session.get(PlaylistEntry, entry_id)
+            if entry is None:
+                return False
+            playlist_id = entry.playlist_id
+            session.delete(entry)
+            playlist = session.get(Playlist, playlist_id)
+            if playlist is not None and playlist.entry_count > 0:
+                playlist.entry_count -= 1
+            return True
+
     def has_queued_items(self) -> bool:
         with self.session() as session:
             count = session.scalar(select(func.count(QueueItem.id)).where(QueueItem.status == QueueStatus.queued))

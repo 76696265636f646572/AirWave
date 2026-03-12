@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -437,6 +437,16 @@ def queue_playlist_entry(entry_id: int, request: Request) -> dict[str, Any]:
         result = _services(request)["playlist"].queue_playlist_entry(entry_id)
         _publish_ui_snapshot(request)
         return result
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@api_router.delete("/playlists/entries/{entry_id}")
+def delete_playlist_entry(entry_id: int, request: Request) -> Response:
+    try:
+        _services(request)["playlist"].remove_playlist_entry(entry_id)
+        _publish_ui_snapshot(request)
+        return Response(status_code=204)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

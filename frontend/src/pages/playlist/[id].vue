@@ -18,6 +18,9 @@
             :item="entry"
             mode="search"
             :playlists="playlists"
+            :playlist-id="playlist.id"
+            :entry-id="entry.id"
+            @deleted="loadPlaylist()"
           />
         </li>
       </ul>

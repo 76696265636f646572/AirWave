@@ -41,7 +41,7 @@
           </div>
         </div>
         <div v-if="activePlaylistId === playlist.id" class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" @click.stop>
-          <UDropdownMenu :items="dropdownItemsFor(playlist)">
+          <UDropdownMenu :items="dropdownItemsFor(playlist)" :ui="{ separator: 'hidden' }">
             <UButton
               type="button"
               icon="i-lucide-more-horizontal"

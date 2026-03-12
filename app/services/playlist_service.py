@@ -163,3 +163,7 @@ class PlaylistService:
         if created is None:
             raise ValueError("Playlist entry not found")
         return {"ok": True, "count": 1, "item_ids": [created.id]}
+
+    def remove_playlist_entry(self, entry_id: int) -> None:
+        if not self.repository.delete_playlist_entry(entry_id):
+            raise ValueError("Playlist entry not found")
