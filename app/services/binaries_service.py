@@ -14,6 +14,7 @@ import tarfile
 import tempfile
 import urllib.request
 import zipfile
+import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -73,8 +74,16 @@ def _parse_yt_dlp_version(out: str) -> str:
 def _parse_ffmpeg_version(out: str) -> str:
     # "ffmpeg version 6.1.1 Copyright..." -> "6.1.1"
     match = re.search(r"ffmpeg version (\S+)", out or "")
-    return match.group(1) if match else (out.splitlines()[0].strip() if out else "")
-
+    if match:
+        try:
+            logger.info("Parsing ffmpeg version: %s", match.group(1))
+            # N-123313-g68046d0b33-20260309
+            date = re.search(r"(\d{8})", match.group(1))
+            if date:
+                return datetime.datetime.strptime(date.group(1), "%Y%m%d").strftime("%Y-%m-%d")
+            return match.group(1)
+        except ValueError:
+            return match.group(1)
 
 def _parse_deno_version(out: str) -> str:
     # "deno 2.0.0" or "deno 2.0.0 (release, x86_64-unknown-linux-gnu)"
@@ -222,12 +231,13 @@ class BinariesService:
         latest_ff = self._latest_ffmpeg()
         if latest_ff and cur and not cur.is_system:
             # For managed ffmpeg, compare release date vs binary mtime; simplify: always has_update=True if we have latest
+            has_update = cur.version != latest_ff
             result.append(
                 UpdateInfo(
                     name="ffmpeg",
                     current=cur.version or "—",
                     latest=latest_ff,
-                    has_update=True,  # Allow reinstall
+                    has_update=has_update,
                 )
             )
         elif cur:
@@ -349,7 +359,6 @@ class BinariesService:
             raise RuntimeError("No yt-dlp release found")
         url = f"https://github.com/yt-dlp/yt-dlp/releases/download/{tag}/{asset}"
         _download_file(url, target)
-        Path(target).chmod(stat.S_IMODE(Path(target).stat().st_mode) | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def _install_deno(self) -> None:
         asset = _deno_asset_name()
@@ -376,8 +385,10 @@ class BinariesService:
             if not extracted.is_file():
                 raise RuntimeError("Downloaded archive did not contain deno binary")
             Path(target).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(extracted, target)
-        Path(target).chmod(stat.S_IMODE(Path(target).stat().st_mode) | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            tmp_target = target.with_suffix(".new")
+            shutil.copy2(extracted, tmp_target)
+            tmp_target.chmod(tmp_target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            os.replace(tmp_target, target)
 
     def _install_ffmpeg(self) -> None:
         asset = _ffmpeg_asset_name()
@@ -389,17 +400,23 @@ class BinariesService:
         url = f"https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/{asset}"
         _download_and_extract_ffmpeg(url, target)
 
-
-def _is_executable(path: str) -> bool:
-    expanded = Path(path).expanduser()
-    return expanded.exists() and os.access(expanded, os.X_OK)
-
-
 def _download_file(url: str, dest: str) -> None:
-    req = urllib.request.Request(url, headers={"User-Agent": GITHUB_UA})
-    Path(dest).parent.mkdir(parents=True, exist_ok=True)
-    urllib.request.urlretrieve(url, dest)  # noqa: S310 - trusted GitHub release URL
+    dest_path = Path(dest).expanduser().resolve()
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
 
+    req = urllib.request.Request(url, headers={"User-Agent": GITHUB_UA})
+
+    with tempfile.NamedTemporaryFile(dir=dest_path.parent, delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+
+        with urllib.request.urlopen(req) as resp:  # noqa: S310
+            shutil.copyfileobj(resp, tmp)
+
+    # ensure executable
+    tmp_path.chmod(tmp_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    # atomic replace
+    os.replace(tmp_path, dest_path)
 
 def _download_and_extract_ffmpeg(url: str, target_path: str) -> None:
     target = Path(target_path).expanduser().resolve()
@@ -425,5 +442,7 @@ def _download_and_extract_ffmpeg(url: str, target_path: str) -> None:
                 extracted_bin = candidate
         if extracted_bin is None:
             raise RuntimeError("Downloaded archive did not contain ffmpeg binary")
-        shutil.copy2(extracted_bin, target)
-        target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        tmp_target = target.with_suffix(".new")
+        shutil.copy2(extracted_bin, tmp_target)
+        tmp_target.chmod(tmp_target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        os.replace(tmp_target, target)

@@ -6,10 +6,13 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
+from unittest.mock import patch
+
 from app.core.config import Settings
 from app.db.models import QueueStatus
 from app.db.repository import NewQueueItem
 from app.main import create_app
+from app.services.stream_engine import PlaybackMode
 
 
 TEST_PLAYLIST_UUID = uuid.UUID("aaaaaaaa-bbbb-4ccc-8000-000000000010")
@@ -208,6 +211,7 @@ def _build_test_client(tmp_path):
         db_url=f"sqlite+pysqlite:///{tmp_path}/extended.db",
         yt_dlp_path="/bin/echo",
         ffmpeg_path="/bin/echo",
+        deno_path="/bin/echo",
     )
     app = create_app(settings=settings, start_engine=False)
     client = TestClient(app)
@@ -504,6 +508,93 @@ def test_stream_endpoint_returns_bytes_without_hanging(tmp_path):
             iterator = resp.iter_bytes()
             first = next(iterator)
             assert first.startswith(b"chunk-")
+
+
+def test_binaries_endpoints(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        resp = client.get("/api/binaries")
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert "binaries" in payload
+        assert len(payload["binaries"]) == 3
+        names = {b["name"] for b in payload["binaries"]}
+        assert names == {"yt-dlp", "ffmpeg", "deno"}
+        for b in payload["binaries"]:
+            assert "path" in b
+            assert "version" in b
+            assert "is_system" in b
+            assert "in_use" in b
+
+
+def test_binaries_in_use_when_playing(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        fake_engine = FakeEngine()
+        fake_engine.state.mode = PlaybackMode.playing
+        app.state.stream_engine = fake_engine
+
+        resp = client.get("/api/binaries")
+        assert resp.status_code == 200
+        payload = resp.json()
+        ffmpeg = next(b for b in payload["binaries"] if b["name"] == "ffmpeg")
+        yt_dlp = next(b for b in payload["binaries"] if b["name"] == "yt-dlp")
+        assert ffmpeg["in_use"] is True
+        assert yt_dlp["in_use"] is True
+        deno = next(b for b in payload["binaries"] if b["name"] == "deno")
+        assert deno["in_use"] is False
+
+
+def test_binaries_updates_endpoint(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        resp = client.get("/api/binaries/updates")
+        assert resp.status_code == 200
+        payload = resp.json()
+        assert "updates" in payload
+        assert isinstance(payload["updates"], list)
+
+
+def test_binaries_install_stop_stream_first_calls_skip(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        fake_engine = FakeEngine()
+        fake_engine.state.mode = PlaybackMode.playing
+        app.state.stream_engine = fake_engine
+
+        with patch.object(app.state.binaries_service, "install") as mock_install:
+            resp = client.post(
+                "/api/binaries/install",
+                json={"name": "ffmpeg", "stop_stream_first": True},
+            )
+            assert fake_engine.skipped is True
+            mock_install.assert_called_once_with("ffmpeg")
+
+
+def test_binaries_install_returns_409_when_binary_busy(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        fake_engine = FakeEngine()
+        fake_engine.state.mode = PlaybackMode.playing
+        app.state.stream_engine = fake_engine
+
+        def raise_text_file_busy(*args, **kwargs):
+            raise OSError(26, "Text file busy")
+
+        with patch.object(app.state.binaries_service, "install", side_effect=raise_text_file_busy):
+            resp = client.post(
+                "/api/binaries/install",
+                json={"name": "ffmpeg", "stop_stream_first": True},
+            )
+            assert resp.status_code == 409
+            assert resp.json()["detail"] == "binary_in_use"
+
+
+def test_binaries_install_rejects_invalid_name(tmp_path):
+    client, app = _build_test_client(tmp_path)
+    with client:
+        resp = client.post("/api/binaries/install", json={"name": "invalid"})
+        assert resp.status_code == 422
 
 
 def test_sonos_endpoints(tmp_path):
