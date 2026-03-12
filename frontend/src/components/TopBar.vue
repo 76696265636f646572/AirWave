@@ -53,7 +53,7 @@
         <UButton type="submit" color="primary" variant="solid" size="md" class="flex-1 rounded-r-none sm:flex-none">
           {{ primaryActionLabel }}
         </UButton>
-        <UDropdownMenu :items="actionDropdownItems" :ui="{ separator: 'hidden' }">
+        <UDropdownMenu :items="actionDropdownItems">
           <UButton type="button" color="primary" variant="solid" size="md" class="rounded-l-none border-l-0">
             <UIcon name="i-lucide-chevron-down" class="size-4" />
           </UButton>
@@ -96,7 +96,7 @@
               <UButton type="submit" color="primary" variant="solid" class="flex-1 rounded-r-none">
                 {{ primaryActionLabel }}
               </UButton>
-              <UDropdownMenu :items="actionDropdownItems" :ui="{ separator: 'hidden' }">
+              <UDropdownMenu :items="actionDropdownItems">
                 <UButton type="button" color="primary" variant="solid" class="rounded-l-none border-l-0">
                   <span aria-hidden="true">|</span>
                   <UIcon name="i-lucide-chevron-down" class="size-4" />
@@ -224,12 +224,12 @@ const primaryActionLabel = computed(() => {
   return "Play";
 });
 
-const actionDropdownItems = computed(() => [[
+const actionDropdownItems = computed(() => [
   ...availableActions.value.map((action) => ({
     label: action.label,
     onSelect: () => runAction(action.id, addUrlSheetOpen.value),
   })),
-]]);
+]);
 
 function consumeInputUrl() {
   const url = urlInput.value.trim();
