@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     stream_path: str = "/stream/live.mp3"
     yt_dlp_path: str = "./bin/yt-dlp"
     ffmpeg_path: str = "ffmpeg"
+    deno_path: str = "./bin/deno"
     mp3_bitrate: str = "128k"
     chunk_size: int = 2048
     queue_poll_seconds: float = Field(default=1.0, ge=0.1, le=10.0)

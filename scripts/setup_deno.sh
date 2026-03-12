@@ -3,7 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN_DIR="$ROOT_DIR/bin"
-TARGET_PATH="$BIN_DIR/deno"
+TARGET_PATH="${AIRWAVE_DENO_PATH:-$BIN_DIR/deno}"
+mkdir -p "$(dirname "$TARGET_PATH")"
 mkdir -p "$BIN_DIR"
 
 ARCH="$(uname -m)"

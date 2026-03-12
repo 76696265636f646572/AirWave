@@ -75,6 +75,10 @@ class SeekRequest(BaseModel):
     percent: float = Field(ge=0.0, le=100.0)
 
 
+class InstallBinaryRequest(BaseModel):
+    name: str = Field(pattern="^(yt-dlp|ffmpeg|deno)$")
+
+
 def _services(request: Request) -> dict[str, Any]:
     return {
         "repo": request.app.state.repository,
@@ -84,6 +88,7 @@ def _services(request: Request) -> dict[str, Any]:
         "sonos": request.app.state.sonos_service,
         "yt_dlp": request.app.state.yt_dlp_service,
         "ui_events": request.app.state.ui_events,
+        "binaries": request.app.state.binaries_service,
     }
 
 
@@ -190,6 +195,40 @@ def index(request: Request) -> HTMLResponse:
 def health(request: Request) -> dict[str, str]:
     services = _services(request)
     return {"status": "ok", "mode": services["engine"].state.mode.value}
+
+
+@api_router.get("/binaries")
+def list_binaries(request: Request) -> dict[str, list[dict[str, Any]]]:
+    binaries = _services(request)["binaries"].get_binaries()
+    return {
+        "binaries": [
+            {"name": b.name, "path": b.path, "version": b.version, "is_system": b.is_system}
+            for b in binaries
+        ]
+    }
+
+
+@api_router.get("/binaries/updates")
+def list_binary_updates(request: Request) -> dict[str, list[dict[str, Any]]]:
+    updates = _services(request)["binaries"].get_updates()
+    return {
+        "updates": [
+            {"name": u.name, "current": u.current, "latest": u.latest, "has_update": u.has_update}
+            for u in updates
+        ]
+    }
+
+
+@api_router.post("/binaries/install")
+def install_binary(payload: InstallBinaryRequest, request: Request) -> dict[str, Any]:
+    svc = _services(request)["binaries"]
+    try:
+        svc.install(payload.name)
+        return {"ok": True, "name": payload.name}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @api_router.get("/state")

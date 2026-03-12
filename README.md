@@ -40,6 +40,7 @@ AIRWAVE_PORT=8000
 AIRWAVE_PUBLIC_BASE_URL=http://192.168.1.50:8000
 AIRWAVE_FFMPEG_PATH=./bin/ffmpeg
 AIRWAVE_YT_DLP_PATH=./bin/yt-dlp
+AIRWAVE_DENO_PATH=./bin/deno
 ```
 
 **Migration from MyTube:** If you previously used `MYTUBE_*` variables, rename them to `AIRWAVE_*` (e.g. `MYTUBE_PUBLIC_BASE_URL` → `AIRWAVE_PUBLIC_BASE_URL`). The default database path is now `./data/airwave.db`; copy or symlink `mytube.db` if you need existing data.
@@ -56,6 +57,7 @@ AIRWAVE_YT_DLP_PATH=./bin/yt-dlp
 | `AIRWAVE_STREAM_PATH` | `/stream/live.mp3` | Path appended to the public base URL for the shared MP3 stream endpoint. |
 | `AIRWAVE_YT_DLP_PATH` | `./bin/yt-dlp` | Path to the `yt-dlp` binary used for YouTube resolution and search. Also used by `scripts/setup_yt_dlp.sh` as its install target. |
 | `AIRWAVE_FFMPEG_PATH` | `ffmpeg` | Path or executable name for `ffmpeg`. Also used by `scripts/setup_ffmpeg.sh` as its install target. |
+| `AIRWAVE_DENO_PATH` | `./bin/deno` | Path to the `deno` binary (JS runtime for yt-dlp YouTube support). Also used by `scripts/setup_deno.sh` as its install target. |
 | `AIRWAVE_MP3_BITRATE` | `128k` | MP3 bitrate passed into the ffmpeg transcoding pipeline. |
 | `AIRWAVE_CHUNK_SIZE` | `2048` | Stream chunk size used when the shared MP3 output is read and distributed to listeners. |
 | `AIRWAVE_QUEUE_POLL_SECONDS` | `1.0` | How often the stream engine checks for queued items when idle. |
@@ -67,7 +69,7 @@ AIRWAVE_YT_DLP_PATH=./bin/yt-dlp
 1. `AIRWAVE_PUBLIC_BASE_URL` is the variable used to build the public stream URL for browsers and Sonos; set it to your host or IP (e.g. `http://192.168.1.50:8000`) when clients outside the local browser need to reach the stream.
 2. If `AIRWAVE_PUBLIC_BASE_URL` points at `localhost`, `0.0.0.0`, `host.docker.internal`, or another non-reachable host, the app tries to detect a LAN IP automatically.
 3. `AIRWAVE_FFMPEG_PATH` can be either a binary name on `PATH` or an explicit file path such as `./bin/ffmpeg`.
-4. `AIRWAVE_YT_DLP_PATH` and `AIRWAVE_FFMPEG_PATH` are the only variables used both by the app and by the install helper scripts.
+4. `AIRWAVE_YT_DLP_PATH`, `AIRWAVE_FFMPEG_PATH`, and `AIRWAVE_DENO_PATH` are used both by the app and by the install helper scripts.
 
 ## Running Tests
 

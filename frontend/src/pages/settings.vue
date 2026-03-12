@@ -1,31 +1,35 @@
 <template>
-  <section class="min-h-0 h-full rounded-xl border border-neutral-700 p-6 surface-panel overflow-auto">
-    <h2 class="text-2xl font-bold">Settings</h2>
-    <p class="mt-1 text-sm text-muted">
-      Theme selection is saved in local storage and applied immediately.
-    </p>
-
-    <div class="mt-6 max-w-sm">
-      <label for="theme-select" class="block text-sm font-medium">Theme</label>
-      <select
-        id="theme-select"
-        :value="currentTheme"
-        class="mt-2 h-10 w-full rounded-md border px-3 text-sm surface-input"
-        @change="onThemeChange($event.target.value)"
+  <section class="min-h-0 h-full flex rounded-xl border border-neutral-700 overflow-hidden surface-panel">
+    <nav class="flex shrink-0 flex-col border-r border-neutral-700 w-48 py-4 surface-panel">
+      <RouterLink
+        to="/settings"
+        class="px-4 py-2 text-sm font-medium"
+        :class="
+          $route.path === '/settings' || $route.path === '/settings/'
+            ? 'bg-neutral-700/50 text-white'
+            : 'text-muted hover:text-white hover:bg-neutral-700/30'
+        "
       >
-        <option value="dark">Dark</option>
-        <option value="night">Night</option>
-      </select>
+        General
+      </RouterLink>
+      <RouterLink
+        to="/settings/update"
+        class="px-4 py-2 text-sm font-medium"
+        :class="
+          $route.path === '/settings/update'
+            ? 'bg-neutral-700/50 text-white'
+            : 'text-muted hover:text-white hover:bg-neutral-700/30'
+        "
+      >
+        Update
+      </RouterLink>
+    </nav>
+    <div class="min-h-0 flex-1 overflow-auto p-6">
+      <RouterView />
     </div>
   </section>
 </template>
 
 <script setup>
-import { useTheme } from "../composables/useTheme";
-
-const { currentTheme, setTheme } = useTheme();
-
-function onThemeChange(value) {
-  setTheme(value);
-}
+import { RouterLink, RouterView } from "vue-router";
 </script>

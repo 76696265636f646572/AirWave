@@ -12,6 +12,7 @@ from app.api.routes import api_router, build_ui_snapshot, render_frontend_shell,
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.repository import Repository
+from app.services.binaries_service import BinariesService
 from app.services.ffmpeg_pipeline import FfmpegPipeline
 from app.services.ffmpeg_setup import ensure_ffmpeg_path
 from app.services.playlist_service import PlaylistService
@@ -74,6 +75,11 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
     )
     playlist_service = PlaylistService(repository, yt_dlp_service)
     sonos_service = SonosService()
+    binaries_service = BinariesService(
+        yt_dlp_path=settings.yt_dlp_path,
+        ffmpeg_path=settings.ffmpeg_path,
+        deno_path=settings.deno_path,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -93,6 +99,7 @@ def create_app(settings: Settings | None = None, start_engine: bool = True) -> F
         app.state.stream_engine = stream_engine
         app.state.playlist_service = playlist_service
         app.state.sonos_service = sonos_service
+        app.state.binaries_service = binaries_service
         app.state.ui_events = ui_events
         try:
             yield
