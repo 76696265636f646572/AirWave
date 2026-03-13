@@ -5,17 +5,66 @@
     <div v-else-if="errorMessage" class="text-sm text-red-300">{{ errorMessage }}</div>
 
     <template v-else>
-      <h2 class="text-2xl font-bold">{{ playlist.title || "Untitled playlist" }}</h2>
-      <p class="mt-1 text-sm text-muted">
-        {{ playlist.channel || "Unknown channel" }} · {{ playlist.entry_count || 0 }} items
-      </p>
+      <!-- Hero section -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
+        <div class="shrink-0">
+          <img
+            v-if="firstTrackThumbnail"
+            :src="firstTrackThumbnail"
+            :alt="playlist.title || 'Playlist'"
+            class="h-40 w-40 rounded-lg object-cover sm:h-48 sm:w-48 surface-elevated shadow-lg"
+          />
+          <div
+            v-else
+            class="flex h-40 w-40 items-center justify-center rounded-lg bg-neutral-700/50 sm:h-48 sm:w-48 surface-elevated"
+          >
+            <UIcon name="i-bi-music-note-beamed" class="size-16 text-muted" />
+          </div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">{{ playlist.title || "Untitled playlist" }}</h2>
+          <p class="mt-1 text-sm text-muted">This is a hardcoded string</p>
+          <p class="mt-2 text-sm text-muted">
+            {{ songCount }} {{ songCount === 1 ? "song" : "songs" }}, {{ formattedTotalDuration }}
+          </p>
+        </div>
+      </div>
 
-      <div v-if="!entries.length" class="mt-4 text-sm text-muted">This playlist has no entries yet.</div>
+      <!-- Action row -->
+      <div class="mt-4 flex items-center gap-2">
+        <UButton
+          type="button"
+          color="primary"
+          variant="solid"
+          size="lg"
+          icon="i-bi-play-fill"
+          :ui="{ rounded: 'rounded-full' }"
+          :disabled="!entries.length"
+          aria-label="Play playlist"
+          @click="playPlaylistNow(playlist.id)"
+        />
+        <UDropdownMenu :items="dropdownItems" :ui="{ separator: 'hidden' }" @update:open="(open) => !open && playlistSelector.resetSearch()">
+          <template #playlist-filter>
+            <PlaylistSelectorFilter v-model="playlistSelector.playlistSearchTerm" placeholder="Find a playlist" />
+          </template>
+          <UButton
+            type="button"
+            icon="i-bi-three-dots"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            aria-label="More actions"
+            class="cursor-pointer"
+          />
+        </UDropdownMenu>
+      </div>
+
+      <div v-if="!entries.length" class="mt-6 text-sm text-muted">This playlist has no entries yet.</div>
 
       <UScrollArea
         v-else
-        :ui="{ viewport: 'mt-4 gap-2' }"
-        class="mt-4 min-h-0 flex-1"
+        :ui="{ viewport: 'mt-6 gap-2' }"
+        class="min-h-0 flex-1"
       >
         <VueDraggable
           v-model="entries"
@@ -42,28 +91,194 @@
       </UScrollArea>
     </template>
   </section>
+
+  <UModal v-model:open="renameModalOpen" :ui="{ width: 'max-w-sm' }">
+    <template #content>
+      <form class="p-4" @submit.prevent="submitRename">
+        <h3 class="text-lg font-semibold">Rename playlist</h3>
+        <input
+          v-model="renameTitle"
+          type="text"
+          class="mt-3 w-full rounded-md border px-3 py-2 text-sm surface-input"
+          placeholder="Playlist name"
+          @keydown.enter.prevent="submitRename"
+        />
+        <div class="mt-4 flex justify-end gap-2">
+          <UButton type="button" color="neutral" variant="ghost" @click="renameModalOpen = false">
+            Cancel
+          </UButton>
+          <UButton type="submit" color="primary" variant="solid">
+            Save
+          </UButton>
+        </div>
+      </form>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="deleteModalOpen" :ui="{ width: 'max-w-sm' }">
+    <template #content>
+      <div class="p-4">
+        <h3 class="text-lg font-semibold">Delete playlist</h3>
+        <p class="mt-2 text-sm text-muted">
+          Delete "{{ playlistToDelete ? (playlistToDelete.title || 'Untitled playlist') : '' }}"?
+          This cannot be undone.
+        </p>
+        <div class="mt-4 flex justify-end gap-2">
+          <UButton type="button" color="neutral" variant="ghost" @click="deleteModalOpen = false">
+            Cancel
+          </UButton>
+          <UButton
+            type="button"
+            color="error"
+            variant="solid"
+            @click="submitDelete"
+          >
+            Delete
+          </UButton>
+        </div>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { VueDraggable } from "vue-draggable-plus";
 
+import PlaylistSelectorFilter from "../../components/PlaylistSelectorFilter.vue";
 import Song from "../../components/Song.vue";
 import { fetchJson } from "../../composables/useApi";
+import { formatTotalDuration } from "../../composables/useDuration";
 import { useLibraryState } from "../../composables/useLibraryState";
+import { usePlaylistSelector } from "../../composables/usePlaylistSelector";
 
-const { playlists, reorderPlaylistEntry } = useLibraryState();
-
+const {
+  playlists,
+  reorderPlaylistEntry,
+  playPlaylistNow,
+  queuePlaylist,
+  addUrlToPlaylist,
+  renamePlaylist,
+  setPlaylistPinned,
+  deletePlaylist,
+} = useLibraryState();
+const playlistSelector = usePlaylistSelector(() => playlists.value);
 const route = useRoute();
+const router = useRouter();
 const playlist = ref({});
 const entries = ref([]);
 const loading = ref(false);
 const notFound = ref(false);
 const errorMessage = ref("");
+const renameModalOpen = ref(false);
+const renameTitle = ref("");
+const playlistToRename = ref(null);
+const deleteModalOpen = ref(false);
+const playlistToDelete = ref(null);
+
+const firstTrackThumbnail = computed(() => {
+  const first = entries.value[0];
+  if (first?.thumbnail_url) return first.thumbnail_url;
+  const videoId = first?.video_id ?? first?.id;
+  if (videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  return playlist.value?.thumbnail_url || "";
+});
+
+const songCount = computed(() => entries.value.length || playlist.value?.entry_count || 0);
+
+const totalDurationSeconds = computed(() =>
+  entries.value.reduce((sum, e) => sum + (e.duration_seconds || 0), 0)
+);
+
+const formattedTotalDuration = computed(() => formatTotalDuration(totalDurationSeconds.value));
+
+const dropdownItems = computed(() => {
+  const pl = playlist.value;
+  if (!pl?.id) return [];
+  const items = [
+      { label: "Queue", icon: "i-bi-music-note-list", class: "cursor-pointer", onSelect: () => queuePlaylist(pl.id) },
+      { label: "Play now", icon: "i-bi-play-fill", class: "cursor-pointer", onSelect: () => playPlaylistNow(pl.id) },
+  ];
+  const otherPlaylists = (playlistSelector.filteredPlaylists.value ?? []).filter((p) => p.id !== pl.id);
+  if (entries.value.length > 0 && playlists.value?.length > 0) {
+    const addToPlaylistChildren = [
+      { type: "label", slot: "playlist-filter" },
+      ...otherPlaylists.map((p) => ({
+        label: p.title || "Untitled playlist",
+        onSelect: () => addAllEntriesToPlaylist(p.id),
+      })),
+    ];
+    items.push(
+      {
+        label: "Add to playlist",
+        icon: "i-bi-plus",
+        children: [addToPlaylistChildren],
+      },
+    );
+  }
+  const pinned = !!pl.pinned;
+  items.push(
+    { label: "Rename", icon: "i-bi-pencil-fill", class: "cursor-pointer", onSelect: () => openRenameModal(pl) },
+    {
+      label: pinned ? "Unpin" : "Pin",
+      icon: pinned ? "i-bi-pin" : "i-bi-pin-fill",
+      class: "cursor-pointer",
+      onSelect: () => setPlaylistPinned(pl.id, !pinned),
+    },
+    {
+      label: "Delete",
+      icon: "i-bi-trash-fill",
+      class: "cursor-pointer",
+      onSelect: () => openDeleteModal(pl),
+      color: "error",
+    },
+  );
+  return items;
+});
+
+async function addAllEntriesToPlaylist(targetPlaylistId) {
+  const urls = entries.value.map((e) => e.source_url).filter(Boolean);
+  for (const url of urls) {
+    await addUrlToPlaylist(targetPlaylistId, url);
+  }
+  playlistSelector.resetSearch();
+}
+
+function openRenameModal(pl) {
+  playlistToRename.value = pl;
+  renameModalOpen.value = true;
+}
+
+function openDeleteModal(pl) {
+  playlistToDelete.value = pl;
+  deleteModalOpen.value = true;
+}
+
+async function submitRename() {
+  const title = renameTitle.value.trim();
+  if (!title || !playlistToRename.value) return;
+  await renamePlaylist(playlistToRename.value.id, title);
+  renameModalOpen.value = false;
+  playlistToRename.value = null;
+  loadPlaylist();
+}
+
+async function submitDelete() {
+  const pl = playlistToDelete.value;
+  if (!pl) return;
+  deleteModalOpen.value = false;
+  playlistToDelete.value = null;
+  await deletePlaylist(pl.id);
+  router.push("/playlists");
+}
 
 let requestId = 0;
+
+watch(playlistToRename, (p) => {
+  renameTitle.value = p ? (p.title || "") : "";
+});
 
 function playlistIdFromRoute() {
   const value = route.params.id;
