@@ -7,7 +7,7 @@
       aria-label="Now playing"
     >
       <!-- Header: back, context, title, menu -->
-      <header class="fullscreen-player-header flex shrink-0 items-center justify-between gap-3 px-4 pb-2 pt-[max(1rem,env(safe-area-inset-top))]">
+      <header class="fullscreen-player-header flex shrink-0 items-center justify-between gap-3 px-6 pb-2 pt-[max(1rem,env(safe-area-inset-top))]">
         <UButton
           type="button"
           color="neutral"
@@ -51,7 +51,7 @@
         <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" aria-hidden="true" />
 
         <!-- Content overlay: thumbnail + title + artists + add, then progress -->
-        <div class="relative flex flex-col gap-4 px-4 pt-4 pb-6">
+        <div class="relative flex flex-col gap-4 px-6 pt-4 pb-6">
           <div class="flex items-start gap-4">
             <div class="h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 shadow-xl">
               <img
@@ -102,7 +102,7 @@
 
       <!-- Controls: shuffle, prev, play/pause (large), next, repeat -->
       <div class="fullscreen-player-controls shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
-        <div class="flex items-center justify-center gap-4">
+        <div class="flex items-center justify-center gap-4 mb-10">
           <UButton
             type="button"
             :color="playbackState.shuffle_enabled ? 'primary' : 'neutral'"
@@ -123,7 +123,7 @@
           />
           <UButton
             type="button"
-            color="primary"
+            color="neutral"
             variant="solid"
             size="xl"
             class="fullscreen-player-play-button min-h-[4.5rem] min-w-[4.5rem] flex items-center justify-center rounded-full p-0"

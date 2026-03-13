@@ -32,8 +32,8 @@
       </div>
       <UButton
         type="button"
-        color="primary"
-        variant="solid"
+        color="neutral"
+        variant="ghost"
         class="player-bar-mobile-play shrink-0 min-h-[2.75rem] min-w-[2.75rem] flex items-center justify-center p-0"
         aria-label="Play / Pause"
         @click.stop="togglePause"
@@ -71,7 +71,7 @@
       </div>
 
       <div class="min-w-0 flex flex-col items-center">
-        <div class="mb-2 flex w-full items-center justify-center gap-2">
+        <div class="mb-3 flex w-full items-center justify-center gap-2">
           <UButton
             type="button"
             :color="playbackState.shuffle_enabled ? 'primary' : 'neutral'"

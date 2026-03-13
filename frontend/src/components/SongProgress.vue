@@ -7,12 +7,12 @@
       color="neutral"
       :size="size"
       :disabled="!canSeek"
-      :ui="{ root: 'group', range: 'transition-colors group-hover:bg-primary', thumb: 'opacity-0 transition-opacity group-hover:opacity-100' }"
-      class="w-full"
+      :ui="{ root: 'group', range: 'transition-colors group-hover:bg-primary', thumb: 'cursor-pointer opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100' }"
+      class="w-full cursor-pointer"
       aria-label="Seek current track"
       @update:model-value="onSeekInput"
     />
-    <div class="mt-1 flex w-full items-center justify-between text-xs text-muted">
+    <div class="mt-2 flex w-full items-center justify-between text-xs text-muted">
       <span>{{ formatDuration(elapsedSeconds) }}</span>
       <span>{{ formatDuration(durationSeconds) }}</span>
     </div>
