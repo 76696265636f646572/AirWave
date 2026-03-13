@@ -20,6 +20,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SidebarPlaylists: typeof import('./src/components/SidebarPlaylists.vue')['default']
     Song: typeof import('./src/components/Song.vue')['default']
+    SongProgress: typeof import('./src/components/SongProgress.vue')['default']
     SonosPanel: typeof import('./src/components/SonosPanel.vue')['default']
     TopBar: typeof import('./src/components/TopBar.vue')['default']
     UApp: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/App.vue')['default']
@@ -28,7 +29,6 @@ declare module 'vue' {
     UDropdownMenu: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/DropdownMenu.vue')['default']
     UIcon: typeof import('./../node_modules/@nuxt/ui/dist/runtime/vue/components/Icon.vue')['default']
     UModal: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Modal.vue')['default']
-    UProgress: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Progress.vue')['default']
     USlider: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Slider.vue')['default']
     UTabs: typeof import('./../node_modules/@nuxt/ui/dist/runtime/components/Tabs.vue')['default']
   }

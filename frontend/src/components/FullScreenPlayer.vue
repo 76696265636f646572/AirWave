@@ -88,28 +88,14 @@
           </div>
 
           <div class="space-y-2">
-            <div
-              ref="progressTrackEl"
-              class="cursor-pointer"
-              :class="{ 'pointer-events-none opacity-60': !playbackState.can_seek }"
-              role="button"
-              tabindex="0"
-              :aria-disabled="!playbackState.can_seek"
-              aria-label="Seek"
-              @click="onProgressClick"
-            >
-              <UProgress
-                :model-value="playbackState.progress_percent || 0"
-                :max="100"
-                color="primary"
-                size="md"
-                class="w-full"
-              />
-            </div>
-            <div class="flex justify-between text-xs text-muted">
-              <span>{{ formatDuration(playbackState.elapsed_seconds) }}</span>
-              <span>{{ formatDuration(playbackState.duration_seconds) }}</span>
-            </div>
+            <SongProgress
+              :progress-percent="playbackState.progress_percent ?? 0"
+              :elapsed-seconds="playbackState.elapsed_seconds"
+              :duration-seconds="playbackState.duration_seconds"
+              :can-seek="playbackState.can_seek"
+              size="md"
+              @seek="seekToPercent"
+            />
           </div>
         </div>
       </div>
@@ -225,8 +211,7 @@
 </template>
 
 <script setup>
-import { computed, inject, ref, watch } from "vue";
-import { formatDuration } from "../composables/useDuration";
+import { computed, inject, watch } from "vue";
 import { useLibraryState } from "../composables/useLibraryState";
 import { usePlaybackState } from "../composables/usePlaybackState";
 import { useUiState } from "../composables/useUiState";
@@ -241,7 +226,6 @@ const {
   toggleMuted,
 } = inject("localPlayback");
 
-const progressTrackEl = ref(null);
 const { playbackState } = usePlaybackState();
 const { fullScreenPlayerOpen } = useUiState();
 
@@ -282,15 +266,6 @@ function cycleRepeatMode() {
   const currentMode = playbackState.value.repeat_mode || "off";
   const nextMode = modes[(modes.indexOf(currentMode) + 1) % modes.length];
   setRepeatMode(nextMode);
-}
-
-function onProgressClick(event) {
-  if (!progressTrackEl.value || !playbackState.value.can_seek) return;
-  const bounds = progressTrackEl.value.getBoundingClientRect();
-  if (!bounds.width) return;
-  const raw = ((event.clientX - bounds.left) / bounds.width) * 100;
-  const percent = Math.max(0, Math.min(100, raw));
-  seekToPercent(percent);
 }
 
 function onLocalVolumeChange(value) {
