@@ -22,7 +22,7 @@
           v-model="unifiedInput"
           type="text"
           placeholder="Search or paste YouTube URL..."
-          class="h-10 w-full min-w-0 flex-1 rounded-md border px-3 text-sm sm:min-w-[200px] sm:max-w-[320px] surface-input"
+          class="h-10 w-full min-w-0 flex-1 rounded-md border px-3 text-sm sm:min-w-[400px] sm:max-w-[800px] surface-input"
         />
         <template v-if="isUrlInput">
           <div class="flex w-full sm:w-auto">
