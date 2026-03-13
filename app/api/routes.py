@@ -551,7 +551,7 @@ async def websocket_events(websocket: WebSocket) -> None:
 def search_youtube(
     request: Request,
     q: str = Query(min_length=1),
-    limit: int = Query(default=10, ge=1, le=25),
+    limit: int = Query(default=10, ge=1, le=100),
 ) -> dict[str, Any]:
     results = _services(request)["yt_dlp"].search_videos(query=q, limit=limit)
     return {"query": q, "count": len(results), "results": results}

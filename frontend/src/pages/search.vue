@@ -90,7 +90,7 @@ async function searchYoutube(rawQuery) {
   errorMessage.value = "";
 
   try {
-    const payload = await fetchJson(`/api/search/youtube?q=${encodeURIComponent(normalized)}&limit=10`);
+    const payload = await fetchJson(`/api/search/youtube?q=${encodeURIComponent(normalized)}&limit=50`);
     if (activeRequestId !== requestId) return;
     results.value = Array.isArray(payload?.results) ? payload.results : [];
   } catch (error) {
