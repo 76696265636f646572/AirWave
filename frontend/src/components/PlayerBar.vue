@@ -78,6 +78,7 @@
             :variant="playbackState.shuffle_enabled ? 'soft' : 'ghost'"
             icon="i-lucide-shuffle"
             aria-label="Toggle shuffle"
+            class="cursor-pointer"
             @click="setShuffleEnabled(!playbackState.shuffle_enabled)"
           />
           <UButton type="button" color="neutral" variant="ghost" icon="i-lucide-skip-back" aria-label="Previous" @click="previousTrack" />
@@ -87,7 +88,7 @@
             variant="solid"
             :icon="playPauseIcon"
             aria-label="Toggle play pause"
-            class="rounded-full"
+            class="rounded-full cursor-pointer"
             @click="togglePause"
           />
           <UButton type="button" color="neutral" variant="ghost" icon="i-lucide-skip-forward" aria-label="Next" @click="skipCurrent" />
@@ -97,6 +98,7 @@
             :variant="playbackState.repeat_mode !== 'off' ? 'soft' : 'ghost'"
             :icon="repeatIcon"
             :aria-label="repeatLabel"
+            class="cursor-pointer"
             @click="cycleRepeatMode"
           />
         </div>
@@ -107,6 +109,7 @@
           :duration-seconds="playbackState.duration_seconds"
           :can-seek="playbackState.can_seek"
           size="md"
+          class="cursor-pointer"
           @seek="seekToPercent"
         />
       </div>
@@ -119,6 +122,7 @@
               :variant="sidebarView === SIDEBAR_QUEUE_VIEW ? 'soft' : 'ghost'"
               icon="i-lucide-list-music"
               aria-label="Show queue and history"
+              class="cursor-pointer"
               @click="sidebarView = SIDEBAR_QUEUE_VIEW"
             />
             <UButton
@@ -127,6 +131,7 @@
               :variant="sidebarView === SIDEBAR_SONOS_VIEW ? 'soft' : 'ghost'"
               icon="i-lucide-speaker"
               aria-label="Show Sonos speakers"
+              class="cursor-pointer"
               @click="sidebarView = SIDEBAR_SONOS_VIEW"
             />
           </div>
@@ -144,6 +149,7 @@
           variant="soft"
           size="xs"
           :disabled="!playbackState.stream_url || isLocalPlaybackActive"
+          class="cursor-pointer"
           @click="startLocalPlayback"
         >
           Play Local
@@ -154,6 +160,7 @@
           variant="outline"
           size="xs"
           :disabled="!isLocalPlaybackActive"
+          class="cursor-pointer"
           @click="stopLocalPlayback"
         >
           Stop Local
@@ -166,6 +173,7 @@
             :icon="localVolumeIcon"
             aria-label="Toggle local audio mute"
             :disabled="!playbackState.stream_url"
+            class="cursor-pointer"
             @click="toggleMuted"
           />
           <USlider
@@ -177,6 +185,7 @@
             :disabled="!playbackState.stream_url"
             :ui="{ root: 'group', range: 'transition-colors group-hover:bg-primary', thumb: 'opacity-0 cursor-pointer transition-opacity group-hover:opacity-100' }"
             aria-label="Local audio volume"
+            class="cursor-pointer"
             @update:model-value="onLocalVolumeChange"
           />
         </div>
