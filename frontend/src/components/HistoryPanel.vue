@@ -8,7 +8,7 @@
         variant="soft"
         size="xs"
         :disabled="!history.length"
-        class="shrink-0"
+        class="shrink-0 cursor-pointer"
         @click="clearHistory"
       >
         Clear History

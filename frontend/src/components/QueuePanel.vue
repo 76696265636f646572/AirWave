@@ -8,7 +8,7 @@
         variant="soft"
         size="xs"
         :disabled="!queue.length"
-        class="shrink-0"
+        class="shrink-0 cursor-pointer"
         @click="clearQueue"
       >
         Clear Queue
