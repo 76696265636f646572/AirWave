@@ -1,5 +1,5 @@
 <template>
-  <section class="home-page min-h-0 overflow-auto rounded-xl border border-neutral-700 p-4 md:p-6 surface-panel">
+  <section class="home-page min-h-0 min-w-0 overflow-auto rounded-xl border border-neutral-700 p-4 md:p-6 surface-panel">
     <!-- Hero -->
     <div class="home-hero mb-6 md:mb-8">
       <h1 class="text-3xl font-bold tracking-tight md:text-4xl">AirWave</h1>
@@ -66,9 +66,9 @@
     </div>
 
     <!-- Grid: playlists | queue/history | sonos -->
-    <div class="home-grid grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div class="home-grid min-w-0 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <!-- Featured playlists -->
-      <div class="home-section rounded-xl border p-4 surface-elevated">
+      <div class="home-section min-w-0 rounded-xl border p-4 surface-elevated">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-lg font-semibold">Playlists</h2>
           <UButton
@@ -86,7 +86,7 @@
           <li
             v-for="playlist in featuredPlaylists"
             :key="playlist.id"
-            class="home-playlist-card flex cursor-pointer items-center gap-3 rounded-lg border p-2 transition-colors playlist-card"
+            class="home-playlist-card flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border p-2 transition-colors playlist-card"
             :class="playlist.id === activePlaylistId ? 'bg-primary-500/20' : 'hover:bg-neutral-700/50'"
             @click="openPlaylist(playlist.id)"
           >
@@ -111,7 +111,7 @@
       </div>
 
       <!-- Queue preview -->
-      <div class="home-section rounded-xl border p-4 surface-elevated">
+      <div class="home-section min-w-0 rounded-xl border p-4 surface-elevated">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-lg font-semibold">Up next</h2>
           <UButton
@@ -136,7 +136,7 @@
       </div>
 
       <!-- History preview -->
-      <div class="home-section rounded-xl border p-4 surface-elevated">
+      <div class="home-section min-w-0 rounded-xl border p-4 surface-elevated">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-lg font-semibold">Recently played</h2>
           <UButton
@@ -161,7 +161,7 @@
       </div>
 
       <!-- Sonos card -->
-      <div v-if="speakers.length > 0" class="home-section home-sonos-card rounded-xl border p-4 surface-elevated lg:col-span-2">
+      <div v-if="speakers.length > 0" class="home-section home-sonos-card min-w-0 rounded-xl border p-4 surface-elevated lg:col-span-2">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold">Sonos</h2>

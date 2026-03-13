@@ -231,7 +231,7 @@ class Repository:
             playlist = session.get(Playlist, playlist_id)
             if playlist is None:
                 return None
-            if title is not None and playlist.source_url.startswith("custom://"):
+            if title is not None:
                 playlist.title = title
             if pinned is not None:
                 playlist.pinned = pinned

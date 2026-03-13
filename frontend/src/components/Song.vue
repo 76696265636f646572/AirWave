@@ -1,5 +1,5 @@
 <template>
-  <div class="group flex items-center gap-3 rounded-md border px-3 py-2 playlist-card">
+  <div class="group flex min-w-0 items-center gap-3 rounded-md border px-3 py-2 playlist-card">
     
     <div
       v-if="thumbnailSrc"
@@ -37,7 +37,7 @@
     </div>
     <div
       v-if="dropdownItems.length > 0"
-      class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+      class="shrink-0 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
       @click.stop
     >
       <UDropdownMenu :items="dropdownItems" :ui="{ separator: 'hidden' }" @update:open="(open) => !open && (playlistSearchTerm = '')">
