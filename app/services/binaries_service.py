@@ -76,8 +76,6 @@ def _parse_ffmpeg_version(out: str) -> str:
     match = re.search(r"ffmpeg version (\S+)", out or "")
     if match:
         try:
-            logger.info("Parsing ffmpeg version: %s", match.group(1))
-            # N-123313-g68046d0b33-20260309
             date = re.search(r"(\d{8})", match.group(1))
             if date:
                 return datetime.datetime.strptime(date.group(1), "%Y%m%d").strftime("%Y-%m-%d")
