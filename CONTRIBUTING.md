@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for considering contributing to _AirWave_! This document provides guidelines for contributing.
+Thank you for considering contributing to _Airwave_! This document provides guidelines for contributing.
 
 ## How to Contribute
 
@@ -22,4 +22,4 @@ Use Github Issues to report bugs. When reporting bugs, please include:
 ## Questions?
 
 We're happy to help! Feel free to open an issue for any questions or concerns.
-You can also join our [Discussions](https://github.com/76696265636f646572/AirWave/discussions)
+You can also join our [Discussions](https://github.com/76696265636f646572/Airwave/discussions)

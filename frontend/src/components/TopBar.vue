@@ -4,7 +4,7 @@
     <template v-if="!isMobile">
     <div class="flex items-center w-full gap-3">
       <div class="flex flex-1 items-center min-w-0">
-        <h1 class="text-2xl font-bold leading-tight">AirWave</h1>
+        <h1 class="text-2xl font-bold leading-tight">Airwave</h1>
       </div>
       <form
         class="flex flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-center sm:justify-center shrink-0"
@@ -67,7 +67,7 @@
     <!-- Mobile: compact row -->
     <template v-else>
     <div class="flex items-center justify-between gap-2">
-      <h1 class="text-xl font-bold leading-tight">AirWave</h1>
+      <h1 class="text-xl font-bold leading-tight">Airwave</h1>
       <div class="flex items-center gap-1">
         <UButton
           type="button"

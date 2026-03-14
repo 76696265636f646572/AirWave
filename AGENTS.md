@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository is **AirWave**: a FastAPI backend plus a Vue/Vite frontend that exposes one shared live MP3 stream for all connected clients. Users can add single YouTube URLs or playlist URLs into a shared queue, and Sonos devices consume the same stream URL as browsers.
+This repository is **Airwave**: a FastAPI backend plus a Vue/Vite frontend that exposes one shared live MP3 stream for all connected clients. Users can add single YouTube URLs or playlist URLs into a shared queue, and Sonos devices consume the same stream URL as browsers.
 
 Use this file as the default working guide for code agents in this repo. Keep changes small, targeted, and easy to verify.
 

@@ -27,7 +27,7 @@ FFMPEG_RELEASES_URL = "https://api.github.com/repos/yt-dlp/FFmpeg-Builds/release
 DENO_RELEASES_URL = "https://api.github.com/repos/denoland/deno/releases"
 
 # Default User-Agent to avoid GitHub rate limiting
-GITHUB_UA = "AirWave/1.0 (https://github.com/airwave)"
+GITHUB_UA = "Airwave/1.0 (https://github.com/airwave)"
 
 
 def _request_json(url: str) -> list[dict[str, Any]]:

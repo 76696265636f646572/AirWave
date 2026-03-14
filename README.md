@@ -1,4 +1,4 @@
-# AirWave
+# Airwave
 
 A WSL-friendly FastAPI application that exposes one shared live MP3 stream for all connected clients. Users can queue individual YouTube URLs or playlist URLs into a shared queue.
 
@@ -51,7 +51,7 @@ debug, info, warning, error
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `AIRWAVE_APP_NAME` | `AirWave` | Display name used by the FastAPI app and UI template. |
+| `AIRWAVE_APP_NAME` | `Airwave` | Display name used by the FastAPI app and UI template. |
 | `AIRWAVE_DB_URL` | `sqlite+pysqlite:///./data/airwave.db` | SQLAlchemy database URL. |
 | `AIRWAVE_HOST` | `0.0.0.0` | Host used by `scripts/run_dev.sh` when starting `uvicorn`. |
 | `AIRWAVE_PORT` | `8000` | Port used by `scripts/run_dev.sh` and as the fallback port for stream URL generation. |

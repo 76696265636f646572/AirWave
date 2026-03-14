@@ -2,7 +2,7 @@
   <section class="home-page min-h-0 min-w-0 overflow-auto rounded-xl border border-neutral-700 p-4 md:p-6 surface-panel">
     <!-- Hero -->
     <div class="home-hero mb-6 md:mb-8">
-      <h1 class="text-3xl font-bold tracking-tight md:text-4xl">AirWave</h1>
+      <h1 class="text-3xl font-bold tracking-tight md:text-4xl">Airwave</h1>
       <p class="mt-2 max-w-xl text-sm text-muted md:text-base">
         Shared live audio from YouTube. Add tracks and playlists to the queue, stream to browsers and Sonos.
       </p>
