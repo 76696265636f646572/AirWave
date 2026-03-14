@@ -93,7 +93,7 @@ class Settings(BaseSettings):
         configured = self.public_base_url.rstrip("/")
         configured_parts = urlsplit(configured)
         configured_host = _extract_host(configured)
-        if _is_reachable_host(configured_host):
+        if configured_host:
             return configured
 
         detected_host = _detect_local_ip()
