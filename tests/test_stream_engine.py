@@ -415,3 +415,42 @@ def test_retry_resolves_fresh_metadata_after_failed_attempt(tmp_path):
     finished = repo.get_item(created[0].id)
     assert finished is not None
     assert finished.status == QueueStatus.completed
+
+
+def test_runtime_stats_reports_cache_sizes(tmp_path):
+    repo = Repository(f"sqlite+pysqlite:///{tmp_path}/cache-stats.db")
+    repo.init_db()
+    engine = StreamEngine(
+        repository=repo,
+        yt_dlp_service=FakeYtDlp(),
+        ffmpeg_pipeline=FakeFfmpeg(),
+        queue_poll_seconds=0.01,
+    )
+
+    first = ResolvedTrack(
+        source_url="u1",
+        normalized_url="u1",
+        title="resolved",
+        channel="chan",
+        duration_seconds=120,
+        thumbnail_url=None,
+        stream_url="http://media.local/audio/1",
+    )
+    second = ResolvedTrack(
+        source_url="u2",
+        normalized_url="u2",
+        title="resolved",
+        channel="chan",
+        duration_seconds=120,
+        thumbnail_url=None,
+        stream_url="http://media.local/audio/2",
+    )
+
+    engine._cache_resolved_track(101, first)  # noqa: SLF001 - direct cache stats coverage
+    engine._cache_resolved_track(102, second)  # noqa: SLF001 - direct cache stats coverage
+    engine._remember_recent_resolved_track(first)  # noqa: SLF001 - direct cache stats coverage
+
+    stats = engine.runtime_stats()
+
+    assert stats["cached_track_count"] == 2
+    assert stats["recent_cache_count"] == 1

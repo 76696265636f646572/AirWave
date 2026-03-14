@@ -388,6 +388,9 @@ class StreamEngine:
             tracks_completed = self._tracks_completed
             tracks_failed = self._tracks_failed
             tracks_skipped = self._tracks_skipped
+        with self._resolved_cache_lock:
+            cached_track_count = len(self._resolved_track_cache)
+            recent_cache_count = len(self._recent_resolved_by_url)
         return {
             "mode": self.state.mode.value,
             "queued_count": self.repository.queued_count(),
@@ -401,6 +404,8 @@ class StreamEngine:
             "tracks_completed": tracks_completed,
             "tracks_failed": tracks_failed,
             "tracks_skipped": tracks_skipped,
+            "cached_track_count": cached_track_count,
+            "recent_cache_count": recent_cache_count,
         }
 
     def _record_streamed_chunk(self, chunk_size: int) -> None:
@@ -434,12 +439,14 @@ class StreamEngine:
             else:
                 progress_label = f"{elapsed_seconds:.1f}s"
             logger.info(
-                "Engine stats mode=%s track=%s progress=%s listeners=%s queued=%s total_bytes=%s total_chunks=%s completed=%s skipped=%s failed=%s",
+                "Engine stats mode=%s track=%s progress=%s listeners=%s queued=%s cache=%s recent_cache=%s total_bytes=%s total_chunks=%s completed=%s skipped=%s failed=%s",
                 stats["mode"],
                 track_label,
                 progress_label,
                 stats["subscriber_count"],
                 stats["queued_count"],
+                stats["cached_track_count"],
+                stats["recent_cache_count"],
                 stats["total_bytes_streamed"],
                 stats["total_chunks_streamed"],
                 stats["tracks_completed"],
