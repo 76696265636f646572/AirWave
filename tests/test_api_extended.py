@@ -387,6 +387,7 @@ def test_play_now_endpoint_adds_video_and_returns_item_ids(tmp_path):
         payload = play_now.json()
         assert payload["ok"] is True
         assert payload["item_ids"] == [1]
+        assert fake_engine.skipped is True
 
 
 def test_play_now_playlist_url_replaces_queue(tmp_path):
@@ -405,6 +406,7 @@ def test_play_now_playlist_url_replaces_queue(tmp_path):
         assert payload["type"] == "playlist"
         assert payload["item_ids"] == [11, 12]
         assert fake_playlist.queue_replace_requested is True
+        assert fake_engine.skipped is True
 
 
 def test_playback_control_endpoints(tmp_path):
