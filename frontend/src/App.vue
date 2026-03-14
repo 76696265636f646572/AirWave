@@ -121,6 +121,7 @@ import SonosPanel from "./components/SonosPanel.vue";
 import TopBar from "./components/TopBar.vue";
 import { useBreakpoint } from "./composables/useBreakpoint";
 import { useLocalPlayback } from "./composables/useLocalPlayback";
+import { useMediaSession } from "./composables/useMediaSession";
 import { initializeLibraryState } from "./composables/useLibraryState";
 import { initializeNotifications } from "./composables/useNotifications";
 import { initializePlaybackState, usePlaybackState } from "./composables/usePlaybackState";
@@ -172,6 +173,7 @@ initializeNotifications(useToast());
 onMounted(async () => {
   initializeTheme();
   initializeUiState(route);
+  useMediaSession();
   await Promise.allSettled([initializeLibraryState(), initializePlaybackState(), initializeSonosState()]);
 });
 </script>
